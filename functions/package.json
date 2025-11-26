@@ -1,0 +1,29 @@
+{
+  "name": "chronoworks-functions",
+  "description": "Cloud Functions for ChronoWorks",
+  "version": "1.0.0",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "test:email": "node test-email-config.js"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.0",
+    "axios": "^1.13.2",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0",
+    "twilio": "^5.10.3"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}

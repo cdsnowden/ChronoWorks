@@ -1,0 +1,169 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/superAdmins/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserCompanyId() {
+      return getUserData().companyId;
+    }
+
+    function isCompanyAdmin() {
+      return isAuthenticated() && getUserData().role == 'company_admin';
+    }
+
+    function isManager() {
+      return isAuthenticated() && getUserData().role == 'manager';
+    }
+
+    function belongsToSameCompany(companyId) {
+      return isAuthenticated() && getUserCompanyId() == companyId;
+    }
+
+    function canAccessCompanyData(resourceData) {
+      return isSuperAdmin() || belongsToSameCompany(resourceData.companyId);
+    }
+
+    // Super Admins Collection
+    // Only super admins can read/write
+    match /superAdmins/{adminId} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // Companies Collection
+    // Super admins: full access
+    // Company admins: read their own company
+    match /companies/{companyId} {
+      allow read: if isSuperAdmin() || belongsToSameCompany(companyId);
+      allow write: if isSuperAdmin();
+    }
+
+    // Registration Requests Collection
+    // Anyone can create (public signup)
+    // Only super admins can read/update
+    match /registrationRequests/{requestId} {
+      allow create: if true; // Public signup
+      allow read, update, delete: if isSuperAdmin();
+    }
+
+    // Subscription Plans Collection
+    // Anyone authenticated can read (for pricing page)
+    // Only super admins can write
+    match /subscriptionPlans/{planId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    // Users Collection
+    // Users can read their own company's users
+    // Only company admins and super admins can write
+    match /users/{userId} {
+      allow read: if isSuperAdmin() ||
+                     (isAuthenticated() && getUserCompanyId() == resource.data.companyId);
+      allow create: if isSuperAdmin() || isCompanyAdmin();
+      allow update: if isSuperAdmin() ||
+                       isCompanyAdmin() ||
+                       request.auth.uid == userId; // Users can update their own profile
+      allow delete: if isSuperAdmin() || isCompanyAdmin();
+    }
+
+    // Shifts Collection
+    // Company employees can read their company's shifts
+    // Managers and admins can write
+    match /shifts/{shiftId} {
+      allow read: if canAccessCompanyData(resource.data);
+      allow write: if isSuperAdmin() ||
+                      (isAuthenticated() && (isCompanyAdmin() || isManager()) &&
+                       belongsToSameCompany(request.resource.data.companyId));
+    }
+
+    // Time Entries Collection
+    // Employees can read/write their own
+    // Managers and admins can read/write all in their company
+    match /timeEntries/{entryId} {
+      allow read: if canAccessCompanyData(resource.data);
+      allow create: if isAuthenticated() &&
+                       belongsToSameCompany(request.resource.data.companyId);
+      allow update: if canAccessCompanyData(resource.data) &&
+                       (request.auth.uid == resource.data.userId ||
+                        isCompanyAdmin() ||
+                        isManager());
+      allow delete: if isSuperAdmin() || isCompanyAdmin();
+    }
+
+    // Active Clock-Ins Collection
+    // Employees can read/write their own
+    // Managers and admins can read/write all in their company
+    match /activeClockIns/{clockInId} {
+      allow read: if canAccessCompanyData(resource.data);
+      allow create: if isAuthenticated() &&
+                       belongsToSameCompany(request.resource.data.companyId) &&
+                       request.auth.uid == request.resource.data.userId;
+      allow update: if canAccessCompanyData(resource.data) &&
+                       (request.auth.uid == resource.data.userId ||
+                        isCompanyAdmin() ||
+                        isManager());
+      allow delete: if canAccessCompanyData(resource.data);
+    }
+
+    // Overtime Requests Collection
+    // Employees can create/read their own
+    // Managers can approve/deny
+    match /overtimeRequests/{requestId} {
+      allow read: if canAccessCompanyData(resource.data);
+      allow create: if isAuthenticated() &&
+                       belongsToSameCompany(request.resource.data.companyId) &&
+                       request.auth.uid == request.resource.data.employeeId;
+      allow update: if canAccessCompanyData(resource.data) &&
+                       (isCompanyAdmin() || isManager());
+      allow delete: if isSuperAdmin() || isCompanyAdmin();
+    }
+
+    // Break Entries Collection
+    // Employees can create/read their own
+    // Managers and admins can manage all
+    match /breakEntries/{breakId} {
+      allow read: if canAccessCompanyData(resource.data);
+      allow create: if isAuthenticated() &&
+                       belongsToSameCompany(request.resource.data.companyId);
+      allow update, delete: if canAccessCompanyData(resource.data) &&
+                               (request.auth.uid == resource.data.userId ||
+                                isCompanyAdmin() ||
+                                isManager());
+    }
+
+    // Overtime Risk Notifications Collection
+    // Company employees can read their company's notifications
+    // System creates them (via Cloud Functions)
+    match /overtimeRiskNotifications/{notificationId} {
+      allow read: if canAccessCompanyData(resource.data);
+      allow write: if isSuperAdmin(); // Only Cloud Functions (via admin SDK)
+    }
+
+    // Missed Clock-Out Warnings Collection
+    // Company employees can read their company's warnings
+    // System creates them (via Cloud Functions)
+    match /missedClockOutWarnings/{warningId} {
+      allow read: if canAccessCompanyData(resource.data);
+      allow write: if isSuperAdmin(); // Only Cloud Functions (via admin SDK)
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

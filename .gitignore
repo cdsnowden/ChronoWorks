@@ -1,0 +1,53 @@
+# Flutter/Dart
+flutter_app/.dart_tool/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+flutter_app/.packages
+flutter_app/build/
+
+# Node modules
+functions/node_modules/
+
+# Environment files
+.env
+functions/.env
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+*.pyc
+__pycache__/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*~
+
+# iOS
+flutter_app/ios/Pods/
+flutter_app/ios/.symlinks/
+flutter_app/ios/Flutter/
+
+# Android
+flutter_app/android/.gradle/
+flutter_app/android/app/build/
+flutter_app/android/build/
+
+# Test scripts
+time_off_email_functions.js
+insert_email_functions.py
+remove_duplicates.py
+
+# Additional exclusions
+flutter_app/node_modules/
+flutter_app/nul
+nul

@@ -1,0 +1,46 @@
+{
+  "superAdmins": {
+    "Z1eL0Hz4pcdqYk1GJKbr0OWGOKv2": {
+      "uid": "Z1eL0Hz4pcdqYk1GJKbr0OWGOKv2",
+      "email": "chris.s@snowdensjewelers.com",
+      "name": "Chris Snowden",
+      "role": "super_admin",
+      "permissions": ["all"],
+      "createdAt": "__timestamp__",
+      "lastLoginAt": "__timestamp__",
+      "isActive": true
+    }
+  },
+  "companies": {
+    "test-company-001": {
+      "companyId": "test-company-001",
+      "businessName": "ChronoWorks Test Company",
+      "ownerName": "Chris Snowden",
+      "ownerEmail": "chris.s@snowdensjewelers.com",
+      "phone": "+1-555-123-4567",
+      "address": {
+        "street": "123 Main Street",
+        "city": "Wilmington",
+        "state": "NC",
+        "zip": "28403"
+      },
+      "numberOfEmployees": 10,
+      "industry": "Technology",
+      "timezone": "America/New_York",
+      "status": "active",
+      "registeredAt": "__timestamp__",
+      "approvedAt": "__timestamp__",
+      "approvedBy": "Z1eL0Hz4pcdqYk1GJKbr0OWGOKv2",
+      "trialStartDate": "__timestamp__",
+      "trialEndDate": "__30_days_from_now__",
+      "currentPlan": "trial",
+      "planStartDate": "__timestamp__",
+      "maxEmployees": 25,
+      "createdAt": "__timestamp__",
+      "createdBy": "Z1eL0Hz4pcdqYk1GJKbr0OWGOKv2",
+      "lastLoginAt": "__timestamp__",
+      "isActive": true,
+      "notes": "Initial test company for development"
+    }
+  }
+}

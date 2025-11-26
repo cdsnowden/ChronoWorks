@@ -1,0 +1,16 @@
+{
+  "name": "chronoworks-scripts",
+  "version": "1.0.0",
+  "description": "Migration and seeding scripts for ChronoWorks multi-tenant setup",
+  "scripts": {
+    "setup": "node setup_initial_data.js",
+    "seed:plans": "node seed_subscription_plans.js",
+    "migrate": "node migrate_to_multitenant.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

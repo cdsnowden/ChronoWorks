@@ -1,0 +1,48 @@
+{"users": [
+{
+  "localId": "9TdGYZpicCMmkDxKDY7yxE5tyYa2",
+  "email": "test@example.com",
+  "emailVerified": false,
+  "passwordHash": "okGVPfD7bNLyIFlNVyvugx81FgO8w43rJroYGkCHI6YSrOEJ7UgxKzqkfpiPMAAFMAyMz7xle0Yj7+2wAvbl3g==",
+  "salt": "XSBbU25Ah5+VPg==",
+  "displayName": "John Test",
+  "createdAt": "1763587316847",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "IumHSVs93JYyCvArDuLwDp0NUP12",
+  "email": "exaltvid@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "FlZY9onKz096BPREfzt42WQ60otAixW15jz9KdkKu7N6mRUDxhdIz5VDwzxLfMY/YqBT+iUeocapTfPIKZ37jA==",
+  "salt": "KviB/uHlMe8O4w==",
+  "displayName": "Christopher D Snowden",
+  "lastSignedInAt": "1763591677645",
+  "createdAt": "1763589308359",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "ZAKkRoHJnJb1NuXyANpr9WKznFA2",
+  "email": "chris.s@snowdensjewelers.com",
+  "emailVerified": false,
+  "passwordHash": "q0m1xyc8nNyAdVjpJpJ+1rfvqxliXuFRoiyxZpfpHHEWZlbw7JuNWtR9J0eqpmvufBWdsWwHpbg8FpVl0dVvyQ==",
+  "salt": "QBhXslcSwVWLhg==",
+  "displayName": "Christopher Snowden",
+  "lastSignedInAt": "1763588737678",
+  "createdAt": "1762140791200",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "i2tVFKOQdRgIGhetg2CbgNWll2W2",
+  "email": "cdsnowden@aol.com",
+  "emailVerified": false,
+  "passwordHash": "32mlO/JsIYy/c6ZQEMsRfrXE9Sbr9BHzcRBvUDDD0elflK8fBx3NCbc4FzZH+QMKVXUS0VBiGkyKlsHoYCtH1w==",
+  "salt": "4mTudwwnO+t7yg==",
+  "displayName": "Christopher Snowden",
+  "lastSignedInAt": "1763559088100",
+  "createdAt": "1762220766751",
+  "disabled": false,
+  "providerUserInfo": []
+}]}

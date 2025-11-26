@@ -1,0 +1,37 @@
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "chronoworks-dcfd6",
+          "appId": "1:7115903467:android:7dc70363a47bd3649589ae",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "chronoworks-dcfd6",
+          "configurations": {
+            "android": "1:7115903467:android:7dc70363a47bd3649589ae",
+            "ios": "1:7115903467:ios:fd6a4d50e41e62579589ae",
+            "web": "1:7115903467:web:3c0331d63df493539589ae"
+          }
+        }
+      }
+    }
+  }
+}

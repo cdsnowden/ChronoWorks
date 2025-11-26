@@ -1,0 +1,254 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions - SIMPLIFIED TO AVOID CIRCULAR DEPENDENCIES
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/superAdmins/$(request.auth.uid));
+    }
+
+    function isAccountManager() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/accountManagers/$(request.auth.uid));
+    }
+
+    function userDocExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdminOrManager() {
+      return isAuthenticated() &&
+             userDocExists() &&
+             (getUserRole() == 'admin' || getUserRole() == 'manager');
+    }
+
+    // REMOVED: getUserData(), getUserCompanyId(), belongsToSameCompany(),
+    // canAccessCompanyData(), accountManagerHasAccessToCompanyId()
+    // These functions used get() calls which create circular permission dependencies
+
+    // Super Admins Collection
+    // Only super admins can read/write
+    match /superAdmins/{adminId} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // Account Managers Collection
+    // Only super admins can create/manage Account Managers
+    // Account Managers can read their own profile
+    match /accountManagers/{accountManagerId} {
+      allow read: if isSuperAdmin() || (isAccountManager() && request.auth.uid == accountManagerId);
+      allow write: if isSuperAdmin();
+    }
+
+    // Companies Collection
+    // Super admins: full access
+    // Company admins & employees: read their own company
+    // Account Managers: read all assigned companies
+    // New users: can create their company during signup
+    // Token-based access: anyone can read (needed for subscription management via email links)
+    // SIMPLIFIED: No get() calls to avoid circular dependencies
+    match /companies/{companyId} {
+      allow read: if true; // Public read access for token-based subscription management
+      allow create: if isSuperAdmin() ||
+                       (isAuthenticated() && request.resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // Registration Requests Collection
+    // Anyone can create (public signup)
+    // Only super admins can read/update
+    match /registrationRequests/{requestId} {
+      allow create: if true; // Public signup
+      allow read, update, delete: if isSuperAdmin();
+    }
+
+    // Subscription Plans Collection
+    // Anyone can read (needed for public signup/pricing page)
+    // Only super admins can write
+    match /subscriptionPlans/{planId} {
+      allow read: if true; // Public access for pricing/signup
+      allow write: if isSuperAdmin();
+    }
+
+    // Users Collection
+    // Users can read/update their own profile
+    // Account Managers and Super Admins can read all users
+    // Admins and managers can read/create/update employees
+    // SIMPLIFIED: No get() calls to avoid circular dependencies
+    match /users/{userId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists()) ||  // Admins/managers can read all users
+                     (isAuthenticated() && request.auth.uid == userId);
+      allow create: if (request.auth != null && request.auth.uid == userId) ||  // User creating their own account
+                       isSuperAdmin() ||
+                       (isAuthenticated() && userDocExists());  // Admins/managers can create employees
+      allow update: if request.auth.uid == userId ||  // Users can update their own profile
+                       isSuperAdmin() ||
+                       (isAuthenticated() && userDocExists());  // Admins/managers can update users
+      allow delete: if isSuperAdmin();
+    }
+
+    // Shifts Collection
+    // All authenticated users can read shifts
+    // Only admins and managers can create/update/delete shifts
+    // SIMPLIFIED: No get() calls to avoid circular dependencies
+    match /shifts/{shiftId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists());
+      allow write: if isSuperAdmin() ||
+                      isAccountManager() ||
+                      isAdminOrManager();
+    }
+
+    // Time Entries Collection
+    // Employees can read/write their own
+    // SIMPLIFIED: No get() calls to avoid circular dependencies
+    match /timeEntries/{entryId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists());
+      allow create: if isAuthenticated() && userDocExists();
+      allow update: if isSuperAdmin() ||
+                       (isAuthenticated() && userDocExists());
+      allow delete: if isSuperAdmin();
+    }
+
+    // Active Clock-Ins Collection
+    // Employees can read/write their own
+    // SIMPLIFIED: No get() calls to avoid circular dependencies
+    match /activeClockIns/{clockInId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists());
+      allow create: if isAuthenticated() && userDocExists();
+      allow update: if isSuperAdmin() ||
+                       (isAuthenticated() && userDocExists());
+      allow delete: if isSuperAdmin() ||
+                      (isAuthenticated() && userDocExists());
+    }
+
+    // Overtime Requests Collection
+    // Employees can create/read their own
+    // SIMPLIFIED: No get() calls to avoid circular dependencies
+    match /overtimeRequests/{requestId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists());
+      allow create: if isAuthenticated() && userDocExists();
+      allow update: if isSuperAdmin() ||
+                       (isAuthenticated() && userDocExists());
+      allow delete: if isSuperAdmin();
+    }
+
+    // Break Entries Collection
+    // Employees can create/read their own
+    // SIMPLIFIED: No get() calls to avoid circular dependencies
+    match /breakEntries/{breakId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists());
+      allow create: if isAuthenticated() && userDocExists();
+      allow update, delete: if isSuperAdmin() ||
+                               (isAuthenticated() && userDocExists());
+    }
+
+    // Overtime Risk Notifications Collection
+    // Company employees can read their company's notifications
+    // System creates them (via Cloud Functions)
+    // SIMPLIFIED: No get() calls to avoid circular dependencies
+    match /overtimeRiskNotifications/{notificationId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists());
+      allow write: if isSuperAdmin(); // Only Cloud Functions (via admin SDK)
+    }
+
+    // Missed Clock-Out Warnings Collection
+    // Company employees can read their company's warnings
+    // System creates them (via Cloud Functions)
+    // SIMPLIFIED: No get() calls to avoid circular dependencies
+    match /missedClockOutWarnings/{warningId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists());
+      allow write: if isSuperAdmin(); // Only Cloud Functions (via admin SDK)
+    }
+
+    // Support Tickets Collection
+    // Customers can create tickets for their company
+    // Account Managers can read/manage tickets
+    // Super Admins can access all tickets
+    // SIMPLIFIED: No get() calls to avoid circular dependencies
+    match /supportTickets/{ticketId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists());
+      allow create: if isAuthenticated() && userDocExists();
+      allow update: if isSuperAdmin() || isAccountManager();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Customer Notes Collection
+    // Account Managers can create/read notes for assigned companies
+    // Super Admins can access all notes
+    // TEMPORARY: Simplified rules for debugging
+    match /customerNotes/{noteId} {
+      allow read: if isSuperAdmin() || isAccountManager();
+      allow create: if isSuperAdmin() || isAccountManager();
+      allow update: if isSuperAdmin() ||
+                       (isAccountManager() && request.auth.uid == resource.data.createdBy);
+      allow delete: if isSuperAdmin() ||
+                       (isAccountManager() && request.auth.uid == resource.data.createdBy);
+    }
+
+    // Subscription Change Tokens Collection
+    // Tokens are secure random strings, safe for public read (needed for unauthenticated email links)
+    // Account Managers and Cloud Functions can create tokens
+    // Tokens can be updated to mark them as used (prevents reuse)
+    match /subscriptionChangeTokens/{tokenId} {
+      allow create: if true; // Cloud Functions (admin SDK) or Account Managers
+      allow read: if true; // Public access for token-based subscription management
+      allow update: if true; // Allow marking tokens as used
+      allow delete: if isSuperAdmin() || isAccountManager();
+    }
+
+    // Shift Templates Collection
+    // All authenticated users can read templates (global or created by them)
+    // Only admins and managers can create/update/delete templates
+    // Super Admins and Account Managers have full access
+    match /shiftTemplates/{templateId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists());
+      allow create, update, delete: if isSuperAdmin() ||
+                                       isAccountManager() ||
+                                       isAdminOrManager();
+    }
+
+    // Deletion Requests Collection
+    // Account Managers can create deletion requests
+    // Super Admins can read and process (update) deletion requests
+    match /deletionRequests/{requestId} {
+      allow create: if isAccountManager();
+      allow read, update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

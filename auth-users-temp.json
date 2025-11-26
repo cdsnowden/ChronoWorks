@@ -1,0 +1,41 @@
+{"users": [
+{
+  "localId": "Z1eL0Hz4pcdqYk1GJKbr0OWGOKv2",
+  "email": "chris.s@snowdensjewelers.com",
+  "emailVerified": false,
+  "passwordHash": "GtjQGxO308mBZPpoOJjeGf9X6yNQgQ7QLUrVfcvWlvFHpuZi+mAVYVBF5yzyEsFTSCsLshS3TJdpaUm/bL/0Gw==",
+  "salt": "QCvhbLpNaCXaeg==",
+  "lastSignedInAt": "1761614235253",
+  "createdAt": "1761514476147",
+  "providerUserInfo": []
+},
+{
+  "localId": "kbA7veDG0Ce432A1yppppBTv5pi2",
+  "email": "jsmith@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "s5qsFmnHGN8VmymTNsrZoyvJyGGYd4NV+kgsKi5+3Rqqw/kFs6yqZov7s1PeGckZc9pmP5g+3E1KLNsPKhZZkA==",
+  "salt": "dISnhKfwuKZs9w==",
+  "lastSignedInAt": "1761610579003",
+  "createdAt": "1761591849244",
+  "providerUserInfo": []
+},
+{
+  "localId": "uPAX1RVimMeIvnf6wlKixglahfg1",
+  "email": "jessolsch@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "vKP0pGwWaJviGOZh14JfgafgXqDPWXaCokjukU4Ebxx6/5+b53Mf/qmxGJkbyiIhPs1hGoudm23h19NJF9gSRg==",
+  "salt": "+ZdIwGiW6v6iGQ==",
+  "lastSignedInAt": "1761597978918",
+  "createdAt": "1761517790299",
+  "providerUserInfo": []
+},
+{
+  "localId": "wJ6uSiekHvUxJxVVdsTRjJOjB9H3",
+  "email": "taylorsnowden@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "Iz1Te8QjwNVPneVJB/7XAZqv7P5xV1IwjpqfD2Q4n5eZ4z0YZEm2y5r5D7NfQKzXFmat/SiFzp9QF9ba/pD7kg==",
+  "salt": "eQUOm3/jkPx/pg==",
+  "lastSignedInAt": "1761516251337",
+  "createdAt": "1761515035929",
+  "providerUserInfo": []
+}]}
