@@ -51,3 +51,8 @@ remove_duplicates.py
 flutter_app/node_modules/
 flutter_app/nul
 nul
+
+# Service account keys (NEVER commit these)
+**/serviceAccountKey.json
+**/service-account-key.json
+**/*-adminsdk-*.json
