@@ -107,7 +107,7 @@ async function clearAllData() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   console.log('📝 NOTE: Subscription plans were NOT deleted (they are reusable)');
   console.log('\n🎯 NEXT STEPS:');
-  console.log('   1. Go to https://chronoworks-dcfd6.web.app');
+  console.log('   1. Go to https://chronoworks.co');
   console.log('   2. You will be redirected to First Admin setup');
   console.log('   3. Create your super admin account\n');
 

@@ -42,6 +42,13 @@ const {
   onTimeOffRequestUpdated,
 } = require("./timeOffNotificationFunctions");
 
+// Face Verification Functions
+const {
+  registerFace,
+  verifyFace,
+  hasFaceRegistered,
+} = require("./faceVerificationFunctions");
+
 // Temporary cleanup function
 const {
   deleteAllUsersExcept,
@@ -1430,7 +1437,7 @@ exports.sendNewEmployeeWelcome = onCall(
             employeeEmail: employee.email,
             companyName,
             temporaryPassword,
-            appUrl: "https://chronoworks-dcfd6.web.app",
+            appUrl: "https://chronoworks.co",
           });
 
           logger.info(`Welcome email sent to new employee: ${employee.email}`);
@@ -1455,3 +1462,20 @@ exports.sendNewEmployeeWelcome = onCall(
       }
     }
 );
+
+// Export Face Verification functions
+exports.registerFace = registerFace;
+exports.verifyFace = verifyFace;
+exports.hasFaceRegistered = hasFaceRegistered;
+
+// Compliance Update Functions
+const {
+  checkComplianceUpdates,
+  triggerComplianceCheck,
+  getComplianceStatus,
+} = require("./complianceUpdateFunctions");
+
+// Export Compliance Update functions (runs every 30 days)
+exports.checkComplianceUpdates = checkComplianceUpdates;
+exports.triggerComplianceCheck = triggerComplianceCheck;
+exports.getComplianceStatus = getComplianceStatus;

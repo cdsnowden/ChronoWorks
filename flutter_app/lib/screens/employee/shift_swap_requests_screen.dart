@@ -5,7 +5,7 @@ import '../../models/shift_swap_request_model.dart';
 import '../../models/shift_model.dart';
 import '../../models/user_model.dart';
 import '../../services/shift_swap_request_service.dart';
-import '../../providers/auth_provider.dart';
+import '../../services/auth_provider.dart';
 
 class ShiftSwapRequestsScreen extends StatefulWidget {
   const ShiftSwapRequestsScreen({Key? key}) : super(key: key);
@@ -22,7 +22,7 @@ class _ShiftSwapRequestsScreenState extends State<ShiftSwapRequestsScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
+    final user = authProvider.currentUser;
 
     if (user == null) {
       return Scaffold(
@@ -95,7 +95,7 @@ class _ShiftSwapRequestsScreenState extends State<ShiftSwapRequestsScreen> {
 
   Widget _buildMyRequests(UserModel user) {
     return StreamBuilder<List<ShiftSwapRequestModel>>(
-      stream: _service.getEmployeeRequests(user.uid),
+      stream: _service.getEmployeeRequests(user.id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -193,7 +193,7 @@ class _ShiftSwapRequestsScreenState extends State<ShiftSwapRequestsScreen> {
         final requests = snapshot.data ?? [];
         // Filter out the user's own requests
         final filteredRequests =
-            requests.where((r) => r.requesterId != user.uid).toList();
+            requests.where((r) => r.requesterId != user.id).toList();
 
         if (filteredRequests.isEmpty) {
           return Center(
@@ -376,8 +376,8 @@ class _ShiftSwapRequestsScreenState extends State<ShiftSwapRequestsScreen> {
     showDialog(
       context: context,
       builder: (context) => _CreateRequestDialog(
-        userId: user.uid,
-        userName: user.displayName ?? 'Unknown',
+        userId: user.id,
+        userName: user.fullName ?? 'Unknown',
         companyId: user.companyId,
       ),
     );
@@ -705,8 +705,8 @@ class _CreateRequestDialogState extends State<_CreateRequestDialog> {
           requesterId: widget.userId,
           requesterName: widget.userName,
           originalShift: _selectedShift!,
-          targetEmployeeId: _targetEmployee?.uid,
-          targetEmployeeName: _targetEmployee?.displayName,
+          targetEmployeeId: _targetEmployee?.id,
+          targetEmployeeName: _targetEmployee?.fullName,
           reason: _reason.isEmpty ? null : _reason,
           companyId: widget.companyId,
         );
@@ -719,8 +719,8 @@ class _CreateRequestDialogState extends State<_CreateRequestDialog> {
           requesterId: widget.userId,
           requesterName: widget.userName,
           originalShift: _selectedShift!,
-          targetEmployeeId: _targetEmployee!.uid,
-          targetEmployeeName: _targetEmployee!.displayName ?? '',
+          targetEmployeeId: _targetEmployee!.id,
+          targetEmployeeName: _targetEmployee!.fullName ?? '',
           replacementShift: _replacementShift!,
           reason: _reason.isEmpty ? null : _reason,
           companyId: widget.companyId,

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../models/time_off_request_model.dart';
 import '../../services/auth_provider.dart' as app_auth;
 import '../../services/time_off_request_service.dart';
 import '../../services/blocked_dates_service.dart';
+import '../../services/pto_service.dart';
 
 class RequestTimeOffScreen extends StatefulWidget {
   const RequestTimeOffScreen({Key? key}) : super(key: key);
@@ -17,6 +17,7 @@ class _RequestTimeOffScreenState extends State<RequestTimeOffScreen> {
   final _formKey = GlobalKey<FormState>();
   final _timeOffService = TimeOffRequestService();
   final _blockedDatesService = BlockedDatesService();
+  final _ptoService = PtoService();
   final _reasonController = TextEditingController();
 
   DateTime? _startDate;
@@ -26,10 +27,94 @@ class _RequestTimeOffScreenState extends State<RequestTimeOffScreen> {
   String? _errorMessage;
   List<DateTime> _blockedDates = [];
 
+  // PTO Eligibility (loaded from policy)
+  bool _isPtoEligible = true;
+  DateTime? _ptoEligibilityDate;
+  int _daysUntilPtoEligible = 0;
+  int _waitingPeriodMonths = 12;
+  bool _eligibilityLoaded = false;
+
+  // PTO Balance info
+  double _availableHours = 0;
+  double _availableDays = 0;
+  bool _balanceLoaded = false;
+
   @override
   void initState() {
     super.initState();
     _loadBlockedDates();
+    _loadPtoEligibility();
+  }
+
+  Future<void> _loadPtoEligibility() async {
+    final authProvider = context.read<app_auth.AuthProvider>();
+    final user = authProvider.currentUser;
+
+    if (user == null) return;
+
+    try {
+      final eligibility = await _ptoService.checkPtoEligibility(
+        employeeId: user.id,
+        companyId: user.companyId,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isPtoEligible = eligibility['isEligible'] as bool;
+          _ptoEligibilityDate = eligibility['eligibilityDate'] as DateTime?;
+          _daysUntilPtoEligible = eligibility['daysUntilEligible'] as int;
+          _waitingPeriodMonths = eligibility['waitingPeriodMonths'] as int;
+          _eligibilityLoaded = true;
+
+          // Auto-select unpaid if not eligible
+          if (!_isPtoEligible && _selectedType == 'paid') {
+            _selectedType = 'unpaid';
+          }
+        });
+      }
+
+      // Load balance if eligible
+      if (_isPtoEligible) {
+        await _loadPtoBalance();
+      }
+    } catch (e) {
+      // Default to eligible on error
+      if (mounted) {
+        setState(() {
+          _isPtoEligible = true;
+          _eligibilityLoaded = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadPtoBalance() async {
+    final authProvider = context.read<app_auth.AuthProvider>();
+    final user = authProvider.currentUser;
+
+    if (user == null) return;
+
+    try {
+      final summary = await _ptoService.getEmployeePtoSummary(
+        employeeId: user.id,
+        companyId: user.companyId,
+        year: DateTime.now().year,
+      );
+
+      if (mounted) {
+        setState(() {
+          _availableHours = summary['available'] as double;
+          _availableDays = summary['availableDays'] as double;
+          _balanceLoaded = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _balanceLoaded = true;
+        });
+      }
+    }
   }
 
   @override
@@ -134,6 +219,151 @@ class _RequestTimeOffScreenState extends State<RequestTimeOffScreen> {
     return _endDate!.difference(_startDate!).inDays + 1;
   }
 
+  double _calculateHours() {
+    if (_startDate == null || _endDate == null) return 0;
+    return _ptoService.calculateRequestHours(
+      startDate: _startDate!,
+      endDate: _endDate!,
+    );
+  }
+
+  bool _hasInsufficientBalance() {
+    if (_selectedType != 'paid' || !_isPtoEligible || !_balanceLoaded) return false;
+    final requestedHours = _calculateHours();
+    return requestedHours > _availableHours;
+  }
+
+  Widget _buildRequestSummary(int days) {
+    final hours = _calculateHours();
+    final isPaid = _selectedType == 'paid';
+    final insufficientBalance = _hasInsufficientBalance();
+
+    return Column(
+      children: [
+        // Request summary
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: insufficientBalance ? Colors.red.shade50 : Colors.green.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: insufficientBalance ? Colors.red.shade300 : Colors.green.shade200,
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    insufficientBalance ? Icons.warning : Icons.check_circle,
+                    color: insufficientBalance ? Colors.red.shade700 : Colors.green.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$days ${days == 1 ? 'day' : 'days'} (${hours.toStringAsFixed(1)} hours)',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: insufficientBalance ? Colors.red.shade700 : Colors.green.shade700,
+                    ),
+                  ),
+                ],
+              ),
+
+              // PTO Balance info for paid requests
+              if (isPaid && _isPtoEligible && _balanceLoaded) ...[
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildBalanceInfo(
+                      'Available',
+                      '${_availableDays.toStringAsFixed(1)}d',
+                      Colors.teal,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: Colors.grey.shade300,
+                    ),
+                    _buildBalanceInfo(
+                      'Requesting',
+                      '${(hours / 8).toStringAsFixed(1)}d',
+                      insufficientBalance ? Colors.red : Colors.orange,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: Colors.grey.shade300,
+                    ),
+                    _buildBalanceInfo(
+                      'Remaining',
+                      '${((_availableHours - hours) / 8).toStringAsFixed(1)}d',
+                      insufficientBalance ? Colors.red : Colors.green,
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        // Insufficient balance warning
+        if (insufficientBalance) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'You don\'t have enough PTO balance. You have ${_availableDays.toStringAsFixed(1)} days available but are requesting ${(hours / 8).toStringAsFixed(1)} days.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBalanceInfo(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _submitRequest() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -156,10 +386,13 @@ class _RequestTimeOffScreenState extends State<RequestTimeOffScreen> {
       return;
     }
 
-    // Check PTO eligibility
-    if (_selectedType == 'paid' && !user.isPtoEligible) {
+    // Check PTO eligibility (uses policy-based waiting period)
+    if (_selectedType == 'paid' && !_isPtoEligible) {
+      final eligibilityDateStr = _ptoEligibilityDate != null
+          ? DateFormat('MMM dd, yyyy').format(_ptoEligibilityDate!)
+          : 'your eligibility date';
       setState(() {
-        _errorMessage = 'You are not eligible for Paid Time Off until ${DateFormat('MMM dd, yyyy').format(user.ptoEligibilityDate)}. Please select Unpaid Leave instead.';
+        _errorMessage = 'You are not eligible for Paid Time Off until $eligibilityDateStr. Please select Unpaid Leave instead.';
       });
       return;
     }
@@ -222,8 +455,6 @@ class _RequestTimeOffScreenState extends State<RequestTimeOffScreen> {
   @override
   Widget build(BuildContext context) {
     final days = _calculateDays();
-    final authProvider = context.watch<app_auth.AuthProvider>();
-    final user = authProvider.currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -238,7 +469,7 @@ class _RequestTimeOffScreenState extends State<RequestTimeOffScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // PTO Eligibility Notice
-                if (user != null && !user.isPtoEligible)
+                if (_eligibilityLoaded && !_isPtoEligible)
                   Container(
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 16),
@@ -266,7 +497,10 @@ class _RequestTimeOffScreenState extends State<RequestTimeOffScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'You will be eligible for Paid Time Off on ${DateFormat('MMM dd, yyyy').format(user.ptoEligibilityDate)} (${user.daysUntilPtoEligible} days remaining). You can still request unpaid leave.',
+                                'Your company requires $_waitingPeriodMonths month${_waitingPeriodMonths == 1 ? '' : 's'} of employment before PTO eligibility. '
+                                '${_ptoEligibilityDate != null ? 'You will be eligible on ${DateFormat('MMM dd, yyyy').format(_ptoEligibilityDate!)}' : ''}'
+                                '${_daysUntilPtoEligible > 0 ? ' ($_daysUntilPtoEligible days remaining)' : ''}. '
+                                'You can still request unpaid leave.',
                                 style: const TextStyle(fontSize: 13),
                               ),
                             ],
@@ -311,9 +545,7 @@ class _RequestTimeOffScreenState extends State<RequestTimeOffScreen> {
                 const SizedBox(height: 12),
 
                 DropdownButtonFormField<String>(
-                  value: (user != null && !user.isPtoEligible && _selectedType == 'paid')
-                      ? 'unpaid'
-                      : _selectedType,
+                  value: _selectedType,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.category),
@@ -321,11 +553,11 @@ class _RequestTimeOffScreenState extends State<RequestTimeOffScreen> {
                   items: [
                     DropdownMenuItem(
                       value: 'paid',
-                      enabled: user?.isPtoEligible ?? true,
+                      enabled: _isPtoEligible,
                       child: Row(
                         children: [
                           const Text('Paid Time Off'),
-                          if (user != null && !user.isPtoEligible)
+                          if (!_isPtoEligible)
                             Padding(
                               padding: const EdgeInsets.only(left: 8),
                               child: Text(
@@ -418,31 +650,9 @@ class _RequestTimeOffScreenState extends State<RequestTimeOffScreen> {
 
                 const SizedBox(height: 16),
 
-                // Days calculation
+                // Days/Hours calculation with PTO balance
                 if (days > 0)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.shade200),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green.shade700),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$days ${days == 1 ? 'day' : 'days'} requested',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildRequestSummary(days),
 
                 const SizedBox(height: 24),
 

@@ -37,8 +37,8 @@ class MyApp extends StatelessWidget {
       }
     }
 
-    // Default to home (landing page) for mobile or root web path
-    return AppRoutes.home;
+    // Default to login screen for mobile or root web path
+    return AppRoutes.login;
   }
 
   @override

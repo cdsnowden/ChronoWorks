@@ -117,6 +117,7 @@ class EmployeeService {
     String? managerId,
     Map<String, double>? workLocation,
     bool isKeyholder = false,
+    DateTime? hireDate,
   }) async {
     try {
       final user = await _authService.createUser(
@@ -132,6 +133,7 @@ class EmployeeService {
         managerId: managerId,
         workLocation: workLocation,
         isKeyholder: isKeyholder,
+        hireDate: hireDate,
       );
 
       // Send welcome email to employees

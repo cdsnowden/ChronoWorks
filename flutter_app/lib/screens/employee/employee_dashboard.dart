@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_provider.dart' as app_auth;
 import '../../routes.dart';
 import '../../widgets/overtime_risk_warning_card.dart';
+import '../../widgets/pto_balance_card.dart';
 
 class EmployeeDashboard extends StatelessWidget {
   const EmployeeDashboard({super.key});
@@ -79,27 +80,25 @@ class EmployeeDashboard extends StatelessWidget {
                 Builder(
                   builder: (context) {
                     final currentUser = FirebaseAuth.instance.currentUser;
-                    print('DEBUG: Employee Dashboard - FirebaseAuth.currentUser = ${currentUser?.uid ?? "NULL"}');
-
                     if (currentUser != null) {
-                      print('DEBUG: Rendering OvertimeRiskWarningCard for employee: ${currentUser.uid}');
                       return OvertimeRiskWarningCard(
                         employeeId: currentUser.uid,
                       );
                     } else {
-                      print('DEBUG: Not rendering OvertimeRiskWarningCard - currentUser is null');
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        color: Colors.red.shade200,
-                        child: const Text(
-                          '⚠️ DEBUG: currentUser is NULL - cannot show overtime card',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      );
+                      return const SizedBox.shrink();
                     }
                   },
                 ),
+
+                const SizedBox(height: 16),
+
+                // PTO Balance Card
+                if (user != null)
+                  PtoBalanceCard(
+                    employeeId: user.id,
+                    companyId: user.companyId,
+                    compact: true,
+                  ),
 
                 const SizedBox(height: 24),
 
@@ -137,11 +136,11 @@ class EmployeeDashboard extends StatelessWidget {
                     ),
                     _buildDashboardCard(
                       context: context,
-                      title: 'Profile',
-                      subtitle: 'Settings',
-                      icon: Icons.person,
+                      title: 'My Reports',
+                      subtitle: 'Hours & pay',
+                      icon: Icons.bar_chart,
                       color: Colors.purple,
-                      route: AppRoutes.profile,
+                      route: AppRoutes.employeeReports,
                     ),
                   ],
                 ),

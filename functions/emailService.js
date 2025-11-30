@@ -2374,7 +2374,7 @@ async function sendOffPremisesAlert(data) {
       <div class="footer">
         <p>This is an automated alert from ChronoWorks.</p>
         <p style="margin-top: 10px;">
-          <a href="https://chronoworks-dcfd6.web.app" style="color: #3b82f6;">View Dashboard</a>
+          <a href="https://chronoworks.co" style="color: #3b82f6;">View Dashboard</a>
         </p>
       </div>
     </div>
@@ -2469,7 +2469,7 @@ async function sendEmployeeWelcomeEmail(data) {
       </div>
 
       <div style="text-align: center;">
-        <a href="${appUrl || 'https://chronoworks-dcfd6.web.app'}" class="button">
+        <a href="${appUrl || 'https://chronoworks.co'}" class="button">
           🚀 Log In to ChronoWorks
         </a>
       </div>
@@ -2524,7 +2524,7 @@ Temporary Password: ${temporaryPassword}
 
 ⚠️ You'll be prompted to change this password on your first login.
 
-Log in at: ${appUrl || 'https://chronoworks-dcfd6.web.app'}
+Log in at: ${appUrl || 'https://chronoworks.co'}
 
 NEXT STEPS - Complete Your Profile:
 After logging in, please complete your profile with:
@@ -2611,7 +2611,7 @@ async function sendTimeOffApprovedEmail(data) {
       <p>Your time off is now confirmed. Please make sure to complete any necessary handoffs before your time away.</p>
 
       <div style="text-align: center;">
-        <a href="${appUrl || 'https://chronoworks-dcfd6.web.app'}" class="button">
+        <a href="${appUrl || 'https://chronoworks.co'}" class="button">
           View in ChronoWorks
         </a>
       </div>
@@ -2645,7 +2645,7 @@ ${reviewNotes ? `Notes: ${reviewNotes}` : ''}
 
 Your time off is now confirmed. Please make sure to complete any necessary handoffs before your time away.
 
-View in ChronoWorks: ${appUrl || 'https://chronoworks-dcfd6.web.app'}
+View in ChronoWorks: ${appUrl || 'https://chronoworks.co'}
 
 Enjoy your time off!
 The ${companyName} Team
@@ -2721,7 +2721,7 @@ async function sendTimeOffDeniedEmail(data) {
       <p>If you have questions about this decision or would like to discuss alternative dates, please reach out to your manager or ${reviewerName}.</p>
 
       <div style="text-align: center;">
-        <a href="${appUrl || 'https://chronoworks-dcfd6.web.app'}" class="button">
+        <a href="${appUrl || 'https://chronoworks.co'}" class="button">
           View in ChronoWorks
         </a>
       </div>
@@ -2755,7 +2755,7 @@ ${reviewNotes ? `REASON:\n${reviewNotes}` : ''}
 
 If you have questions about this decision or would like to discuss alternative dates, please reach out to your manager or ${reviewerName}.
 
-View in ChronoWorks: ${appUrl || 'https://chronoworks-dcfd6.web.app'}
+View in ChronoWorks: ${appUrl || 'https://chronoworks.co'}
 
 Thank you for your understanding.
 The ${companyName} Team
@@ -2837,7 +2837,7 @@ async function sendTimeOffRequestSubmittedEmail(data) {
       <p>Please review and respond to this request as soon as possible.</p>
 
       <div style="text-align: center;">
-        <a href="${appUrl || 'https://chronoworks-dcfd6.web.app'}" class="button">
+        <a href="${appUrl || 'https://chronoworks.co'}" class="button">
           Review Request
         </a>
       </div>
@@ -2873,7 +2873,7 @@ ${reason ? `Reason: ${reason}` : ''}
 
 Please review and respond to this request as soon as possible.
 
-Review Request: ${appUrl || 'https://chronoworks-dcfd6.web.app'}
+Review Request: ${appUrl || 'https://chronoworks.co'}
 
 Thank you,
 ChronoWorks System

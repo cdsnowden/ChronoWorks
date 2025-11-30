@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../models/shift_swap_request_model.dart';
 import '../../services/shift_swap_request_service.dart';
-import '../../providers/auth_provider.dart';
+import '../../services/auth_provider.dart';
 
 class ShiftSwapApprovalScreen extends StatefulWidget {
   const ShiftSwapApprovalScreen({Key? key}) : super(key: key);
@@ -23,7 +23,7 @@ class _ShiftSwapApprovalScreenState extends State<ShiftSwapApprovalScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
+    final user = authProvider.currentUser;
 
     if (user == null) {
       return Scaffold(

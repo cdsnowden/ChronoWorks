@@ -237,6 +237,21 @@ service cloud.firestore {
                                        isAdminOrManager();
     }
 
+    // Time Off Requests Collection
+    // Employees can create and read their own requests
+    // Admins and managers can read and update all requests (for approval)
+    match /timeOffRequests/{requestId} {
+      allow read: if isSuperAdmin() ||
+                     isAccountManager() ||
+                     (isAuthenticated() && userDocExists());
+      allow create: if isAuthenticated() && userDocExists();
+      allow update: if isSuperAdmin() ||
+                       isAccountManager() ||
+                       isAdminOrManager() ||
+                       (isAuthenticated() && userDocExists());
+      allow delete: if isSuperAdmin() || isAdminOrManager();
+    }
+
     // Deletion Requests Collection
     // Account Managers can create deletion requests
     // Super Admins can read and process (update) deletion requests

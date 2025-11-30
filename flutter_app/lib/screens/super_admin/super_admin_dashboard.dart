@@ -188,6 +188,10 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           _buildStatsSection(),
           const SizedBox(height: 24),
 
+          // Platform Reports
+          _buildPlatformReportsCard(),
+          const SizedBox(height: 24),
+
           // Account Manager Management
           _buildAccountManagerSection(),
           const SizedBox(height: 24),
@@ -401,6 +405,48 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     );
   }
 
+Widget _buildPlatformReportsCard() {
+    return Card(
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).pushNamed(AppRoutes.platformReports);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.indigo.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.insights, size: 32, color: Colors.indigo.shade700),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Platform Reports',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Revenue metrics, growth trends, subscription analytics',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   Widget _buildStatsSection() {
     return Card(
       child: Padding(
@@ -436,7 +482,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                 Expanded(
                   child: InkWell(
                     onTap: () {
-                      Navigator.of(context).pushNamed(AppRoutes.registrationRequests);
+                      // Registration requests shown on dashboard
                     },
                     child: _buildStatCard(
                       'Pending Requests',
@@ -506,7 +552,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: () {
-                        Navigator.of(context).pushNamed(AppRoutes.registrationRequests);
+                        // Registration requests shown on dashboard
                       },
                       icon: const Icon(Icons.list_alt),
                       label: const Text('View All'),

@@ -1,6 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Location permissions for clock-in/out geofencing -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Camera permission for face recognition -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Internet permission -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
-        android:label="flutter_app"
+        android:label="ChronoWorks"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

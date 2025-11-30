@@ -119,11 +119,19 @@ class ManagerDashboard extends StatelessWidget {
                         },
                       ),
                       _DashboardCard(
+                        icon: Icons.account_balance_wallet,
+                        title: 'Team PTO',
+                        subtitle: 'View team balances',
+                        onTap: () {
+                          Navigator.of(context).pushNamed(AppRoutes.managerTeamPto);
+                        },
+                      ),
+                      _DashboardCard(
                         icon: Icons.assessment,
                         title: 'Reports',
                         subtitle: 'View reports',
                         onTap: () {
-                          // TODO: Navigate to reports
+                          Navigator.of(context).pushNamed(AppRoutes.managerTeamReports);
                         },
                       ),
                     ],

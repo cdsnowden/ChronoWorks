@@ -65,52 +65,62 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         ),
       );
 
-      // Reload user data and navigate to appropriate dashboard based on role
+      // Navigate to appropriate dashboard - wrapped in separate try-catch
+      // since password change already succeeded at this point
       await Future.delayed(const Duration(milliseconds: 500));
       if (!mounted) return;
 
-      // Get the auth provider and refresh user data
-      final authProvider = context.read<app_auth.AuthProvider>();
-      await authProvider.refreshUser();
+      try {
+        // Get the auth provider and refresh user data
+        final authProvider = context.read<app_auth.AuthProvider>();
+        await authProvider.refreshUser();
 
-      // Check if user is super admin first
-      final superAdminService = SuperAdminService();
-      final isSuperAdmin = await superAdminService.isSuperAdmin();
+        // Check if user is super admin first
+        final superAdminService = SuperAdminService();
+        final isSuperAdmin = await superAdminService.isSuperAdmin();
 
-      if (isSuperAdmin) {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.superAdminDashboard);
+        if (isSuperAdmin) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
         return;
-      }
+        }
 
-      // Check if account manager
-      final amDoc = await FirebaseFirestore.instance
+        // Check if account manager
+        final amDoc = await FirebaseFirestore.instance
           .collection('accountManagers')
           .doc(user.uid)
           .get();
 
-      if (amDoc.exists) {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.accountManagerDashboard);
+        if (amDoc.exists) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
         return;
-      }
+        }
 
-      // Navigate based on role for regular users
-      final currentUser = authProvider.currentUser;
-      if (currentUser == null) {
+        // Navigate based on role for regular users
+        final currentUser = authProvider.currentUser;
+        if (currentUser == null) {
         // Fallback to login if user data not available
         Navigator.of(context).pushReplacementNamed(AppRoutes.login);
         return;
-      }
+        }
 
-      if (currentUser.isAdmin) {
+        if (currentUser.isAdmin) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
-      } else if (currentUser.isManager) {
+        } else if (currentUser.isManager) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.managerDashboard);
-      } else {
+        } else {
         // For employees, check if profile is complete
         if (!currentUser.isProfileComplete) {
           Navigator.of(context).pushReplacementNamed(AppRoutes.completeProfile);
         } else {
           Navigator.of(context).pushReplacementNamed(AppRoutes.employeeDashboard);
+        }
+        }
+      } catch (navError) {
+        // Password was changed successfully, but navigation failed
+        // Just go to login and let them sign in fresh
+        debugPrint('Navigation error after password change: $navError');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.login);
         }
       }
     } catch (e) {

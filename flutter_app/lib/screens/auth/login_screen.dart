@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Clear any error messages from the auth provider
         authProvider.clearError();
         Navigator.of(context).pushReplacementNamed(
-          returnUrl ?? AppRoutes.superAdminDashboard,
+          returnUrl ?? AppRoutes.adminDashboard,
         );
         return;
       }
@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (user.role == 'account_manager') {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.accountManagerDashboard);
+        Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
       } else if (user.isAdmin) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
       } else if (user.isManager) {
@@ -103,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Clear any error messages from the auth provider
           authProvider.clearError();
           Navigator.of(context).pushReplacementNamed(
-            returnUrl ?? AppRoutes.superAdminDashboard,
+            returnUrl ?? AppRoutes.adminDashboard,
           );
           return;
         }
@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Clear any error messages from the auth provider
           authProvider.clearError();
           Navigator.of(context).pushReplacementNamed(
-            returnUrl ?? AppRoutes.accountManagerDashboard,
+            returnUrl ?? AppRoutes.adminDashboard,
           );
           return;
         }
@@ -169,13 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.all(24.0),
             child: Consumer<app_auth.AuthProvider>(
               builder: (context, authProvider, child) {
-                // Check if this is the first user
-                if (authProvider.isFirstUser) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    Navigator.of(context).pushReplacementNamed(AppRoutes.firstAdmin);
-                  });
-                }
-
+                
                 return ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 400),
                   child: Column(
@@ -315,30 +309,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 24),
 
-                      // Sign Up Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'New company? ',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          TextButton(
-                            onPressed: authProvider.isLoading
-                                ? null
-                                : () {
-                                    Navigator.of(context).pushNamed(
-                                      AppRoutes.firstAdmin,
-                                    );
-                                  },
-                            child: const Text(
-                              'Sign Up',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ),
-
+                      
                       const SizedBox(height: 24),
 
                       // Version Info

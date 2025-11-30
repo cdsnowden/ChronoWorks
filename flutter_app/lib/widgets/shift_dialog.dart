@@ -58,9 +58,9 @@ class _ShiftDialogState extends State<ShiftDialog> {
     if (_isEditMode) {
       final shift = widget.shift!;
       _selectedEmployeeId = shift.employeeId;
-      _selectedDate = shift.startTime;
-      _startTime = TimeOfDay.fromDateTime(shift.startTime);
-      _endTime = TimeOfDay.fromDateTime(shift.endTime);
+      _selectedDate = shift.startTime ?? DateTime.now();
+      _startTime = TimeOfDay.fromDateTime(shift.startTime ?? DateTime.now());
+      _endTime = TimeOfDay.fromDateTime(shift.endTime ?? DateTime.now());
       _locationController.text = shift.location ?? '';
       _notesController.text = shift.notes ?? '';
       _isPublished = shift.isPublished;

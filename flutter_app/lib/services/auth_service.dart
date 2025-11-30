@@ -189,6 +189,7 @@ class AuthService {
     String? managerId,
     Map<String, double>? workLocation,
     bool isKeyholder = false,
+    DateTime? hireDate,
   }) async{
     try {
       // Validate role
@@ -223,6 +224,7 @@ class AuthService {
         createdAt: DateTime.now(),
         managerId: managerId,
         workLocation: workLocation,
+        hireDate: hireDate,
       );
 
       await _firestore

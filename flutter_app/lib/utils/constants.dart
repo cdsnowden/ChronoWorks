@@ -57,6 +57,8 @@ class FirebaseCollections {
   static const String timeOffRequests = 'timeOffRequests';
   static const String shiftSwapRequests = 'shiftSwapRequests';
   static const String offPremisesAlerts = 'offPremisesAlerts';
+  static const String ptoPolicies = 'ptoPolicies';
+  static const String ptoBalances = 'ptoBalances';
 }
 
 class UserRoles {

@@ -35,7 +35,7 @@ class _AccountSetupStepState extends State<AccountSetupStep> {
   int _passwordStrength = 0;
 
   // Privacy Policy URL
-  static const String _privacyPolicyUrl = 'https://chronoworks-dcfd6.web.app/privacy-policy.html';
+  static const String _privacyPolicyUrl = 'https://chronoworks.co/privacy-policy.html';
 
   void _updatePasswordStrength(String password) {
     setState(() {

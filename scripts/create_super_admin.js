@@ -107,7 +107,7 @@ async function createSuperAdmin() {
     console.log(`   Name: ${firstName} ${lastName}`);
     console.log(`   Email: ${email}`);
     console.log(`   UID: ${uid}\n`);
-    console.log('🌐 You can now log in at: https://chronoworks-dcfd6.web.app\n');
+    console.log('🌐 You can now log in at: https://chronoworks.co\n');
 
   } catch (error) {
     console.error('\n💥 Error:', error.message);

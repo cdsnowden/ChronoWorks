@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'models/user_model.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/password_reset_screen.dart';
-import 'screens/auth/first_admin_screen.dart';
 import 'screens/auth/change_password_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
 import 'screens/admin/employee_list_screen.dart';
@@ -15,43 +14,38 @@ import 'screens/admin/overtime_approval_queue_screen.dart';
 import 'screens/admin/overtime_risk_dashboard.dart';
 import 'screens/manager/manager_dashboard.dart';
 import 'screens/manager/time_off_approval_screen.dart' as manager_time_off;
+import 'screens/manager/manager_team_reports_screen.dart';
+import 'screens/manager/team_pto_screen.dart';
 import 'screens/employee/employee_dashboard.dart';
 import 'screens/employee/clock_screen.dart';
 import 'screens/employee/time_entries_screen.dart';
 import 'screens/employee/my_schedule_screen.dart';
-import 'screens/subscription_plans_page.dart';
-import 'screens/super_admin/super_admin_dashboard.dart';
-import 'screens/account_manager/am_dashboard_screen.dart';
-import 'screens/customer_subscription_management_screen.dart';
-import 'screens/signup/company_signup_form_screen.dart';
-import 'screens/signup/plan_selection_screen.dart';
-import 'screens/admin/registration_requests_page.dart';
+import 'screens/employee/face_registration_screen.dart';
+import 'screens/employee/employee_personal_reports_screen.dart';
 import 'screens/profile/complete_profile_screen.dart';
+import 'screens/profile/profile_screen.dart';
 import 'screens/employee/request_time_off_screen.dart';
 import 'screens/employee/my_time_off_screen.dart';
 import 'screens/admin/time_off_approval_screen.dart';
 import 'screens/admin/blocked_dates_screen.dart';
 import 'screens/admin/payroll_export_screen.dart';
-import 'screens/landing_page.dart';
+import 'screens/admin/admin_analytics_screen.dart';
+import 'screens/admin/pto_policy_screen.dart';
+import 'screens/admin/pto_balance_management_screen.dart';
+import 'screens/super_admin/platform_reports_screen.dart';
+import 'screens/super_admin/super_admin_dashboard.dart';
+import 'screens/admin/registration_requests_page.dart';
+import 'screens/public/register_page.dart';
 
 class AppRoutes {
-  // Public routes
+  // Home route - now goes to login
   static const String home = '/';
 
   // Auth routes
   static const String login = '/login';
   static const String passwordReset = '/password-reset';
   static const String changePassword = '/change-password';
-  static const String firstAdmin = '/first-admin';
-  static const String signup = '/signup';
   static const String completeProfile = '/complete-profile';
-
-  // Super Admin routes
-  static const String superAdminDashboard = '/super-admin/dashboard';
-  static const String registrationRequests = '/admin/registration-requests';
-
-  // Account Manager routes
-  static const String accountManagerDashboard = '/account-manager/dashboard';
 
   // Admin routes
   static const String adminDashboard = '/admin/dashboard';
@@ -66,11 +60,22 @@ class AppRoutes {
   static const String timeOffApprovals = '/admin/time-off-approvals';
   static const String blockedDates = '/admin/blocked-dates';
   static const String payrollExport = '/admin/payroll-export';
+  static const String adminAnalytics = '/admin/analytics';
+  static const String ptoPolicySettings = '/admin/pto-policy';
+  static const String ptoBalanceManagement = '/admin/pto-balances';
 
   // Manager routes
   static const String managerDashboard = '/manager/dashboard';
   static const String teamSchedule = '/manager/schedule';
   static const String managerTimeOffApprovals = '/manager/time-off-approvals';
+  static const String managerTeamReports = '/manager/team-reports';
+  static const String managerTeamPto = '/manager/team-pto';
+
+  // Super Admin routes
+  static const String platformReports = '/super-admin/reports';
+  static const String superAdminDashboard = '/super-admin/dashboard';
+  static const String registrationRequests = '/super-admin/registration-requests';
+  static const String signup = '/signup';
 
   // Employee routes
   static const String employeeDashboard = '/employee/dashboard';
@@ -79,22 +84,21 @@ class AppRoutes {
   static const String mySchedule = '/employee/schedule';
   static const String myTimeOff = '/employee/time-off';
   static const String requestTimeOff = '/employee/request-time-off';
+  static const String faceRegistration = '/employee/face-registration';
+  static const String employeeReports = '/employee/reports';
 
   // Common routes
   static const String profile = '/profile';
-  static const String subscriptionPlans = '/subscription-plans';
-  static const String subscriptionManage = '/subscription/manage';
 
   // Route generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
-    // Extract path without query parameters for route matching
     final uri = Uri.parse(settings.name ?? '');
     final path = uri.path;
 
     switch (path) {
-      // Public Routes
+      // Home Route - Login Screen
       case home:
-        return MaterialPageRoute(builder: (_) => const LandingPage());
+        return MaterialPageRoute(builder: (_) => const LoginScreen());
 
       // Auth Routes
       case login:
@@ -108,23 +112,6 @@ class AppRoutes {
 
       case completeProfile:
         return MaterialPageRoute(builder: (_) => const CompleteProfileScreen());
-
-      case firstAdmin:
-        return MaterialPageRoute(builder: (_) => const FirstAdminScreen());
-
-      case signup:
-        return MaterialPageRoute(builder: (_) => const PlanSelectionScreen());
-
-      // Super Admin Routes
-      case superAdminDashboard:
-        return MaterialPageRoute(builder: (_) => const SuperAdminDashboard());
-
-      case registrationRequests:
-        return MaterialPageRoute(builder: (_) => const RegistrationRequestsPage());
-
-      // Account Manager Routes
-      case accountManagerDashboard:
-        return MaterialPageRoute(builder: (_) => const AccountManagerDashboardScreen());
 
       // Admin Routes
       case adminDashboard:
@@ -171,12 +158,30 @@ class AppRoutes {
       case blockedDates:
         return MaterialPageRoute(builder: (_) => const BlockedDatesScreen());
 
+      case adminAnalytics:
+        return MaterialPageRoute(builder: (_) => const AdminAnalyticsScreen());
+
       case payrollExport:
         return MaterialPageRoute(builder: (_) => const PayrollExportScreen());
+
+      case ptoPolicySettings:
+        return MaterialPageRoute(builder: (_) => const PtoPolicyScreen());
+
+      case ptoBalanceManagement:
+        return MaterialPageRoute(builder: (_) => const PtoBalanceManagementScreen());
 
       // Manager Routes
       case managerDashboard:
         return MaterialPageRoute(builder: (_) => const ManagerDashboard());
+
+      case platformReports:
+        return MaterialPageRoute(builder: (_) => const PlatformReportsScreen());
+
+      case managerTeamReports:
+        return MaterialPageRoute(builder: (_) => const ManagerTeamReportsScreen());
+
+      case managerTeamPto:
+        return MaterialPageRoute(builder: (_) => const TeamPtoScreen());
 
       case managerTimeOffApprovals:
         return MaterialPageRoute(builder: (_) => const manager_time_off.TimeOffApprovalScreen());
@@ -200,53 +205,21 @@ class AppRoutes {
       case requestTimeOff:
         return MaterialPageRoute(builder: (_) => const RequestTimeOffScreen());
 
+      case faceRegistration:
+        return MaterialPageRoute(builder: (_) => const FaceRegistrationScreen());
+
+      case employeeReports:
+        return MaterialPageRoute(builder: (_) => const EmployeePersonalReportsScreen());
+
+
       // Common Routes
       case profile:
-        return MaterialPageRoute(
-          builder: (_) => const Scaffold(
-            body: Center(child: Text('Profile - Coming Soon')),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const ProfileScreen());
 
-      case subscriptionPlans:
-        return MaterialPageRoute(builder: (_) => const SubscriptionPlansPage());
 
-      // Subscription Management (public, token-based)
-      case subscriptionManage:
-        // Extract token from query parameters
-        final token = uri.queryParameters['token'];
-
-        if (token == null || token.isEmpty) {
-          return MaterialPageRoute(
-            builder: (_) => Scaffold(
-              appBar: AppBar(title: const Text('Invalid Link')),
-              body: const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Text(
-                    'This link is invalid. Please use the link provided in your email.',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-
-        return MaterialPageRoute(
-          builder: (_) => CustomerSubscriptionManagementScreen(token: token),
-        );
-
-      // Default (404)
+      // Default - redirect to login
       default:
-        return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            appBar: AppBar(title: const Text('Page Not Found')),
-            body: Center(
-              child: Text('No route defined for ${settings.name}'),
-            ),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const LoginScreen());
     }
   }
 }

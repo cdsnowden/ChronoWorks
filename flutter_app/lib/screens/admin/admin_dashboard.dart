@@ -63,7 +63,7 @@ class AdminDashboard extends StatelessWidget {
               children: [
                 // Welcome Message
                 Text(
-                  'Welcome back, ${user?.firstName ?? 'Admin'}!',
+                  'Welcome back, \${user?.firstName ?? "Admin"}!',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
@@ -105,7 +105,7 @@ class AdminDashboard extends StatelessWidget {
                         },
                       ),
                       _DashboardCard(
-                        icon: Icons.analytics,
+                        icon: Icons.warning_amber,
                         title: 'Overtime Risk',
                         subtitle: 'Monitor overtime risks',
                         onTap: () {
@@ -117,23 +117,31 @@ class AdminDashboard extends StatelessWidget {
                         title: 'Payroll',
                         subtitle: 'Process payroll',
                         onTap: () {
-                          // TODO: Navigate to payroll
+                          Navigator.of(context).pushNamed(AppRoutes.payrollExport);
                         },
                       ),
                       _DashboardCard(
-                        icon: Icons.card_membership,
-                        title: 'Subscription',
-                        subtitle: 'Manage subscription plan',
+                        icon: Icons.insights,
+                        title: 'Analytics',
+                        subtitle: 'View reports & trends',
                         onTap: () {
-                          Navigator.of(context).pushNamed(AppRoutes.subscriptionPlans);
+                          Navigator.of(context).pushNamed(AppRoutes.adminAnalytics);
                         },
                       ),
                       _DashboardCard(
-                        icon: Icons.settings,
-                        title: 'Settings',
-                        subtitle: 'App settings',
+                        icon: Icons.beach_access,
+                        title: 'PTO Policy',
+                        subtitle: 'Manage time off rules',
                         onTap: () {
-                          // TODO: Navigate to settings
+                          Navigator.of(context).pushNamed(AppRoutes.ptoPolicySettings);
+                        },
+                      ),
+                      _DashboardCard(
+                        icon: Icons.account_balance_wallet,
+                        title: 'PTO Balances',
+                        subtitle: 'View & adjust balances',
+                        onTap: () {
+                          Navigator.of(context).pushNamed(AppRoutes.ptoBalanceManagement);
                         },
                       ),
                     ],

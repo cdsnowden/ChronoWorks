@@ -222,7 +222,7 @@ class AccountLockedPage extends StatelessWidget {
               text,
               style: TextStyle(
                 fontSize: 14,
-                color: color.shade800,
+                color: color,
               ),
             ),
           ),

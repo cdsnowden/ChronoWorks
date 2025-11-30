@@ -134,9 +134,10 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
                       startDate: _weekStart,
                       endDate: _weekEnd,
                     )
-                  : _scheduleService.getShiftsByDateRange(
+                  : _scheduleService.getShiftsByDateRangeForEmployees(
                       startDate: _weekStart,
                       endDate: _weekEnd,
+                      employeeIds: _employees.map((e) => e.id).toList(),
                     ),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -254,10 +255,11 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
     // Group shifts by date
     final groupedShifts = <DateTime, List<ShiftModel>>{};
     for (final shift in shifts) {
+      if (shift.startTime == null) continue; // Skip shifts without start time
       final date = DateTime(
-        shift.startTime.year,
-        shift.startTime.month,
-        shift.startTime.day,
+        shift.startTime!.year,
+        shift.startTime!.month,
+        shift.startTime!.day,
       );
       groupedShifts.putIfAbsent(date, () => []).add(shift);
     }
@@ -356,6 +358,7 @@ class _ScheduleManagementScreenState extends State<ScheduleManagementScreen> {
         employmentType: 'full-time',
         hourlyRate: 0.0,
         createdAt: DateTime.now(),
+        companyId: '',
       ),
     );
 

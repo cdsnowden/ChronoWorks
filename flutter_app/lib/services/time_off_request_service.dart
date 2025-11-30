@@ -3,10 +3,12 @@ import '../models/time_off_request_model.dart';
 import '../models/user_model.dart';
 import '../utils/constants.dart';
 import 'blocked_dates_service.dart';
+import 'pto_service.dart';
 
 class TimeOffRequestService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final BlockedDatesService _blockedDatesService = BlockedDatesService();
+  final PtoService _ptoService = PtoService();
 
   // Create a new time-off request with enhanced validation
   Future<TimeOffRequestModel> createRequest({
@@ -24,7 +26,7 @@ class TimeOffRequestService {
         throw Exception('End date must be after start date');
       }
 
-      // Check PTO eligibility for paid time off requests
+      // Check PTO eligibility and balance for paid time off requests
       if (type == 'paid') {
         final employeeDoc = await _firestore
             .collection(FirebaseCollections.users)
@@ -41,6 +43,30 @@ class TimeOffRequestService {
           final eligibilityDate = employee.ptoEligibilityDate;
           throw Exception(
               'You are not eligible for Paid Time Off until ${eligibilityDate.year}-${eligibilityDate.month.toString().padLeft(2, '0')}-${eligibilityDate.day.toString().padLeft(2, '0')} (after 1 year of employment)');
+        }
+
+        // Calculate hours requested
+        final requestedHours = _ptoService.calculateRequestHours(
+          startDate: startDate,
+          endDate: endDate,
+        );
+
+        // Check PTO balance
+        final canRequest = await _ptoService.canRequestHours(
+          employeeId: employeeId,
+          companyId: companyId,
+          hours: requestedHours,
+          requestDate: startDate,
+        );
+
+        if (!canRequest) {
+          // Get current balance for error message
+          final balance = await _ptoService.getCurrentBalance(employeeId, companyId);
+          final availableHours = balance?.availableHours ?? 0;
+          throw Exception(
+            'Insufficient PTO balance. You have ${availableHours.toStringAsFixed(1)} hours available, '
+            'but this request requires ${requestedHours.toStringAsFixed(1)} hours.'
+          );
         }
       }
 
@@ -87,6 +113,22 @@ class TimeOffRequestService {
       );
 
       await docRef.set(request.toMap());
+
+      // Reserve PTO hours for paid time off requests
+      if (type == 'paid') {
+        final requestedHours = _ptoService.calculateRequestHours(
+          startDate: startDate,
+          endDate: endDate,
+        );
+        await _ptoService.reservePtoHours(
+          employeeId: employeeId,
+          companyId: companyId,
+          requestId: docRef.id,
+          hours: requestedHours,
+          requestDate: startDate,
+        );
+      }
+
       return request;
     } catch (e) {
       throw Exception('Failed to create time-off request: $e');
@@ -195,6 +237,21 @@ class TimeOffRequestService {
         'reviewNotes': 'Cancelled by employee',
         'updatedAt': Timestamp.fromDate(DateTime.now()),
       });
+
+      // Release reserved PTO hours for paid time off
+      if (request.type == 'paid') {
+        final requestedHours = _ptoService.calculateRequestHours(
+          startDate: request.startDate,
+          endDate: request.endDate,
+        );
+        await _ptoService.releasePtoHours(
+          employeeId: request.employeeId,
+          companyId: request.companyId,
+          requestId: requestId,
+          hours: requestedHours,
+          requestDate: request.startDate,
+        );
+      }
     } catch (e) {
       throw Exception('Failed to cancel time-off request: $e');
     }
@@ -208,10 +265,18 @@ class TimeOffRequestService {
     String? reviewNotes,
   }) async {
     try {
-      await _firestore
+      final docRef = _firestore
           .collection(FirebaseCollections.timeOffRequests)
-          .doc(requestId)
-          .update({
+          .doc(requestId);
+      final doc = await docRef.get();
+
+      if (!doc.exists) {
+        throw Exception('Request not found');
+      }
+
+      final request = TimeOffRequestModel.fromFirestore(doc);
+
+      await docRef.update({
         'status': 'approved',
         'reviewedBy': reviewerId,
         'reviewerName': reviewerName,
@@ -219,6 +284,21 @@ class TimeOffRequestService {
         'reviewNotes': reviewNotes,
         'updatedAt': Timestamp.fromDate(DateTime.now()),
       });
+
+      // Confirm PTO usage for paid time off (moves from pending to used)
+      if (request.type == 'paid') {
+        final requestedHours = _ptoService.calculateRequestHours(
+          startDate: request.startDate,
+          endDate: request.endDate,
+        );
+        await _ptoService.confirmPtoUsage(
+          employeeId: request.employeeId,
+          companyId: request.companyId,
+          requestId: requestId,
+          hours: requestedHours,
+          requestDate: request.startDate,
+        );
+      }
     } catch (e) {
       throw Exception('Failed to approve time-off request: $e');
     }
@@ -232,10 +312,18 @@ class TimeOffRequestService {
     String? reviewNotes,
   }) async {
     try {
-      await _firestore
+      final docRef = _firestore
           .collection(FirebaseCollections.timeOffRequests)
-          .doc(requestId)
-          .update({
+          .doc(requestId);
+      final doc = await docRef.get();
+
+      if (!doc.exists) {
+        throw Exception('Request not found');
+      }
+
+      final request = TimeOffRequestModel.fromFirestore(doc);
+
+      await docRef.update({
         'status': 'denied',
         'reviewedBy': reviewerId,
         'reviewerName': reviewerName,
@@ -243,6 +331,21 @@ class TimeOffRequestService {
         'reviewNotes': reviewNotes,
         'updatedAt': Timestamp.fromDate(DateTime.now()),
       });
+
+      // Release reserved PTO hours for paid time off
+      if (request.type == 'paid') {
+        final requestedHours = _ptoService.calculateRequestHours(
+          startDate: request.startDate,
+          endDate: request.endDate,
+        );
+        await _ptoService.releasePtoHours(
+          employeeId: request.employeeId,
+          companyId: request.companyId,
+          requestId: requestId,
+          hours: requestedHours,
+          requestDate: request.startDate,
+        );
+      }
     } catch (e) {
       throw Exception('Failed to deny time-off request: $e');
     }

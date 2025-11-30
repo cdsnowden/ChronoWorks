@@ -113,7 +113,7 @@ exports.onTimeOffRequestCreated = onDocumentCreated(
                 daysRequested: daysRequested,
                 hasConflicts: conflictCount > 0,
                 conflictCount: conflictCount,
-                appUrl: "https://chronoworks-dcfd6.web.app",
+                appUrl: "https://chronoworks.co",
               }),
           );
         });
@@ -211,7 +211,7 @@ exports.onTimeOffRequestUpdated = onDocumentUpdated(
             type: afterData.type,
             reviewerName: reviewerName,
             reviewNotes: afterData.reviewNotes || "",
-            appUrl: "https://chronoworks-dcfd6.web.app",
+            appUrl: "https://chronoworks.co",
           });
           logger.info(`Sent time-off approved email to ${employee.email}`);
         } else if (afterData.status === "denied") {
@@ -224,7 +224,7 @@ exports.onTimeOffRequestUpdated = onDocumentUpdated(
             type: afterData.type,
             reviewerName: reviewerName,
             reviewNotes: afterData.reviewNotes || "",
-            appUrl: "https://chronoworks-dcfd6.web.app",
+            appUrl: "https://chronoworks.co",
           });
           logger.info(`Sent time-off denied email to ${employee.email}`);
         }

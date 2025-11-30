@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:camera/camera.dart';
 import '../../models/time_entry_model.dart';
 import '../../models/break_entry_model.dart';
 import '../../services/auth_provider.dart';
 import '../../services/time_entry_service.dart';
 import '../../services/break_service.dart';
+import '../../services/face_recognition_service.dart';
+import '../../routes.dart';
+import '../../widgets/compliance_alert_card.dart';
 import 'dart:async';
+import 'package:geolocator/geolocator.dart';
 
 class ClockScreen extends StatefulWidget {
   const ClockScreen({super.key});
@@ -18,6 +23,7 @@ class ClockScreen extends StatefulWidget {
 class _ClockScreenState extends State<ClockScreen> {
   final TimeEntryService _timeEntryService = TimeEntryService();
   final BreakService _breakService = BreakService();
+  final FaceRecognitionService _faceService = FaceRecognitionService();
   TimeEntryModel? _activeTimeEntry;
   BreakEntryModel? _activeBreak;
   List<BreakEntryModel> _todaysBreaks = [];
@@ -25,14 +31,41 @@ class _ClockScreenState extends State<ClockScreen> {
   BreakComplianceStatus? _breakCompliance;
   bool _isLoading = false;
   bool _isBreakLoading = false;
+  bool _isVerifyingFace = false;
   Timer? _timer;
   double _weeklyHours = 0.0;
+  bool _hasFaceRegistered = false;
+
+  void _showLocationRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Location Required'),
+        content: const Text(
+          'Location access is required to clock in/out. Please enable location services and grant permission to this app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Geolocator.openLocationSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
     super.initState();
     _loadData();
-    // Update UI every second when clocked in
+    _checkFaceRegistration();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_activeTimeEntry != null && mounted) {
         setState(() {});
@@ -43,7 +76,21 @@ class _ClockScreenState extends State<ClockScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _faceService.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkFaceRegistration() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userId = authProvider.currentUser?.id;
+    if (userId == null) return;
+
+    final hasFace = await _faceService.hasFaceRegistered(userId);
+    if (mounted) {
+      setState(() {
+        _hasFaceRegistered = hasFace;
+      });
+    }
   }
 
   Future<void> _loadData() async {
@@ -60,7 +107,6 @@ class _ClockScreenState extends State<ClockScreen> {
       final activeEntry = await _timeEntryService.getActiveClockIn(userId);
       final weekHours = await _timeEntryService.getCurrentWeekHours(userId);
 
-      // Load break data if user is clocked in
       BreakEntryModel? activeBreak;
       BreakSummary? breakSummary;
       BreakComplianceStatus? breakCompliance;
@@ -90,21 +136,66 @@ class _ClockScreenState extends State<ClockScreen> {
     }
   }
 
+  Future<bool> _verifyFaceForClockIn() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userId = authProvider.currentUser?.id;
+    final companyId = authProvider.currentUser?.companyId;
+
+    if (userId == null || companyId == null) return false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _FaceVerificationDialog(
+        faceService: _faceService,
+        userId: userId,
+        companyId: companyId,
+      ),
+    );
+
+    return result ?? false;
+  }
+
   Future<void> _handleClockIn() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userId = authProvider.currentUser?.id;
 
     if (userId == null) return;
 
+    if (!_hasFaceRegistered) {
+      _showFaceRegistrationRequired();
+      return;
+    }
+
+    setState(() {
+      _isVerifyingFace = true;
+    });
+
+    final faceVerified = await _verifyFaceForClockIn();
+
+    setState(() {
+      _isVerifyingFace = false;
+    });
+
+    if (!faceVerified) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Face verification failed. Clock-in cancelled.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Get location (REQUIRED)
       final location = await _timeEntryService.getCurrentLocation();
 
-      // Enforce location requirement
       if (location == null) {
         throw Exception(
             'Location access is required to clock in. Please enable location services and grant permission.');
@@ -135,13 +226,50 @@ class _ClockScreenState extends State<ClockScreen> {
           _isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        final errorMsg = e.toString();
+        if (errorMsg.contains('Location') || errorMsg.contains('location')) {
+          _showLocationRequiredDialog();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg.replaceAll('Exception: ', '')),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
       }
+    }
+  }
+
+  void _showFaceRegistrationRequired() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Face Registration Required'),
+        content: const Text(
+          'You need to register your face before you can clock in. This helps prevent unauthorized clock-ins.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Later'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _navigateToFaceRegistration();
+            },
+            child: const Text('Register Now'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _navigateToFaceRegistration() async {
+    final result = await Navigator.pushNamed(context, AppRoutes.faceRegistration);
+    if (result == true) {
+      _checkFaceRegistration();
     }
   }
 
@@ -156,10 +284,8 @@ class _ClockScreenState extends State<ClockScreen> {
     });
 
     try {
-      // Get location (REQUIRED)
       final location = await _timeEntryService.getCurrentLocation();
 
-      // Enforce location requirement
       if (location == null) {
         throw Exception(
             'Location access is required to clock out. Please enable location services and grant permission.');
@@ -170,7 +296,6 @@ class _ClockScreenState extends State<ClockScreen> {
         location: location,
       );
 
-      // Reload weekly hours
       final weekHours = await _timeEntryService.getCurrentWeekHours(userId);
 
       if (mounted) {
@@ -186,7 +311,7 @@ class _ClockScreenState extends State<ClockScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Clocked out • ${timeEntry.formattedDuration} worked'),
+                'Clocked out - ${timeEntry.formattedDuration} worked'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -197,12 +322,17 @@ class _ClockScreenState extends State<ClockScreen> {
           _isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        final errorMsg = e.toString();
+        if (errorMsg.contains('Location') || errorMsg.contains('location')) {
+          _showLocationRequiredDialog();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg.replaceAll('Exception: ', '')),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
       }
     }
   }
@@ -218,10 +348,8 @@ class _ClockScreenState extends State<ClockScreen> {
     });
 
     try {
-      // Get location (REQUIRED)
       final location = await _timeEntryService.getCurrentLocation();
 
-      // Enforce location requirement
       if (location == null) {
         throw Exception(
             'Location access is required to start a break. Please enable location services and grant permission.');
@@ -233,7 +361,6 @@ class _ClockScreenState extends State<ClockScreen> {
         location: location,
       );
 
-      // Reload break data
       final breakSummary = await _breakService.getBreakSummary(_activeTimeEntry!.id);
       final breakCompliance = await _breakService.checkBreakCompliance(_activeTimeEntry!);
 
@@ -259,12 +386,17 @@ class _ClockScreenState extends State<ClockScreen> {
           _isBreakLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        final errorMsg = e.toString();
+        if (errorMsg.contains('Location') || errorMsg.contains('location')) {
+          _showLocationRequiredDialog();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg.replaceAll('Exception: ', '')),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
       }
     }
   }
@@ -280,10 +412,8 @@ class _ClockScreenState extends State<ClockScreen> {
     });
 
     try {
-      // Get location (REQUIRED)
       final location = await _timeEntryService.getCurrentLocation();
 
-      // Enforce location requirement
       if (location == null) {
         throw Exception(
             'Location access is required to end a break. Please enable location services and grant permission.');
@@ -294,7 +424,6 @@ class _ClockScreenState extends State<ClockScreen> {
         location: location,
       );
 
-      // Reload break data
       final breakSummary = await _breakService.getBreakSummary(_activeTimeEntry!.id);
       final breakCompliance = await _breakService.checkBreakCompliance(_activeTimeEntry!);
 
@@ -309,7 +438,7 @@ class _ClockScreenState extends State<ClockScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Break ended • ${breakEntry.formattedDuration} break time'),
+                'Break ended - ${breakEntry.formattedDuration} break time'),
             backgroundColor: Colors.green,
           ),
         );
@@ -320,12 +449,17 @@ class _ClockScreenState extends State<ClockScreen> {
           _isBreakLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        final errorMsg = e.toString();
+        if (errorMsg.contains('Location') || errorMsg.contains('location')) {
+          _showLocationRequiredDialog();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg.replaceAll('Exception: ', '')),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
       }
     }
   }
@@ -359,39 +493,47 @@ class _ClockScreenState extends State<ClockScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Current Time
+                  if (!_hasFaceRegistered)
+                    _buildFaceRegistrationBanner(),
+
+                  // Compliance alerts for active shift
+                  if (_activeTimeEntry != null)
+                    ComplianceAlertCard(
+                      employeeId: user.id,
+                      companyId: user.companyId,
+                      clockInTime: _activeTimeEntry!.clockIn,
+                      breaks: null, // Could pass break data if needed
+                      compact: true,
+                    ),
+                  if (_activeTimeEntry != null)
+                    const SizedBox(height: 16),
+
                   _buildCurrentTimeCard(),
                   const SizedBox(height: 24),
 
-                  // Status Card
                   _buildStatusCard(),
                   const SizedBox(height: 24),
 
-                  // Clock In/Out Button
                   _buildClockButton(),
 
-                  // Break compliance warning (if applicable)
                   if (_activeTimeEntry != null && _breakCompliance != null)
                     ...[
                       const SizedBox(height: 16),
                       _buildBreakComplianceCard(),
                     ],
 
-                  // Active break indicator (if on break)
                   if (_activeBreak != null)
                     ...[
                       const SizedBox(height: 16),
                       _buildActiveBreakCard(),
                     ],
 
-                  // Break button (if clocked in)
                   if (_activeTimeEntry != null)
                     ...[
                       const SizedBox(height: 16),
                       _buildBreakButton(),
                     ],
 
-                  // Break summary (if clocked in and has breaks)
                   if (_activeTimeEntry != null && _breakSummary != null && _breakSummary!.breakCount > 0)
                     ...[
                       const SizedBox(height: 16),
@@ -400,11 +542,51 @@ class _ClockScreenState extends State<ClockScreen> {
 
                   const SizedBox(height: 32),
 
-                  // Weekly Hours Card
                   _buildWeeklyHoursCard(),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildFaceRegistrationBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.face, color: Colors.orange.shade700, size: 32),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Face Registration Required',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Register your face to enable clock-in',
+                  style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: _navigateToFaceRegistration,
+            child: const Text('Register'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -461,7 +643,6 @@ class _ClockScreenState extends State<ClockScreen> {
       );
     }
 
-    // Calculate current duration
     final now = DateTime.now();
     final duration = now.difference(_activeTimeEntry!.clockInTime);
     final hours = duration.inHours;
@@ -513,7 +694,7 @@ class _ClockScreenState extends State<ClockScreen> {
     return SizedBox(
       height: 80,
       child: ElevatedButton(
-        onPressed: _isLoading
+        onPressed: (_isLoading || _isVerifyingFace)
             ? null
             : (isClockedIn ? _handleClockOut : _handleClockIn),
         style: ElevatedButton.styleFrom(
@@ -523,8 +704,17 @@ class _ClockScreenState extends State<ClockScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: _isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
+        child: (_isLoading || _isVerifyingFace)
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: Colors.white),
+                  if (_isVerifyingFace) ...[
+                    const SizedBox(width: 16),
+                    const Text('Verifying face...'),
+                  ],
+                ],
+              )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -660,7 +850,6 @@ class _ClockScreenState extends State<ClockScreen> {
   Widget _buildActiveBreakCard() {
     if (_activeBreak == null) return const SizedBox.shrink();
 
-    // Calculate current break duration
     final now = DateTime.now();
     final duration = now.difference(_activeBreak!.breakStartTime);
     final minutes = duration.inMinutes;
@@ -719,7 +908,6 @@ class _ClockScreenState extends State<ClockScreen> {
   Widget _buildBreakComplianceCard() {
     if (_breakCompliance == null) return const SizedBox.shrink();
 
-    // Only show if there's a warning or requirement
     if (!_breakCompliance!.breakWarning && !_breakCompliance!.breakRequired) {
       return const SizedBox.shrink();
     }
@@ -868,6 +1056,213 @@ class _ClockScreenState extends State<ClockScreen> {
                 );
               }).toList(),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FaceVerificationDialog extends StatefulWidget {
+  final FaceRecognitionService faceService;
+  final String userId;
+  final String companyId;
+
+  const _FaceVerificationDialog({
+    required this.faceService,
+    required this.userId,
+    required this.companyId,
+  });
+
+  @override
+  State<_FaceVerificationDialog> createState() => _FaceVerificationDialogState();
+}
+
+class _FaceVerificationDialogState extends State<_FaceVerificationDialog> {
+  CameraController? _cameraController;
+  bool _isInitialized = false;
+  bool _isVerifying = false;
+  String? _errorMessage;
+  String? _statusMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        setState(() {
+          _errorMessage = 'No camera available';
+        });
+        return;
+      }
+
+      final frontCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first,
+      );
+
+      _cameraController = CameraController(
+        frontCamera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+
+      await _cameraController!.initialize();
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+          _statusMessage = 'Position your face in the frame and tap Verify';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to initialize camera: $e';
+      });
+    }
+  }
+
+  Future<void> _verifyFace() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
+    setState(() {
+      _isVerifying = true;
+      _statusMessage = 'Verifying face...';
+      _errorMessage = null;
+    });
+
+    try {
+      final XFile photo = await _cameraController!.takePicture();
+
+      final result = await widget.faceService.verifyFace(
+        userId: widget.userId,
+        imageFile: photo,  // Pass XFile directly - works on web and mobile
+      );
+
+      if (result.isMatch) {
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
+      } else {
+        await widget.faceService.sendViolationNotification(
+          userId: widget.userId,
+          companyId: widget.companyId,
+          violationType: 'face_mismatch',
+          confidence: result.confidence,
+        );
+
+        setState(() {
+          _errorMessage = result.error ?? 'Face verification failed';
+          _statusMessage = 'Try again or contact your manager';
+          _isVerifying = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _isVerifying = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _cameraController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.face, color: Colors.blue, size: 28),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Face Verification',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _isInitialized
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CameraPreview(_cameraController!),
+                    )
+                  : Center(
+                      child: _errorMessage != null
+                          ? Text(_errorMessage!, style: const TextStyle(color: Colors.red))
+                          : const CircularProgressIndicator(),
+                    ),
+            ),
+            const SizedBox(height: 12),
+            if (_statusMessage != null)
+              Text(
+                _statusMessage!,
+                style: TextStyle(color: Colors.grey.shade700),
+                textAlign: TextAlign.center,
+              ),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: (_isInitialized && !_isVerifying) ? _verifyFace : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: _isVerifying
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('Verify'),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

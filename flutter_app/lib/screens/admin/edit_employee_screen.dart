@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../models/user_model.dart';
 import '../../services/employee_service.dart';
 import '../../services/auth_provider.dart';
@@ -35,6 +36,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
   bool _isLoading = false;
   late bool _isKeyholder;
   late bool _isActive;
+  DateTime? _hireDate;
 
   @override
   void initState() {
@@ -52,6 +54,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
     _selectedManagerId = widget.employee.managerId;
     _isKeyholder = widget.employee.isKeyholder;
     _isActive = widget.employee.isActive;
+    _hireDate = widget.employee.hireDate;
 
     _loadManagers();
   }
@@ -98,6 +101,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
         managerId: _selectedManagerId,
         isKeyholder: _isKeyholder,
         isActive: _isActive,
+        hireDate: _hireDate,
         updatedAt: DateTime.now(),
       );
 
@@ -363,6 +367,61 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 16),
+
+              // Hire Date
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _hireDate ?? widget.employee.createdAt,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                    helpText: 'Select Hire Date',
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _hireDate = picked;
+                    });
+                  }
+                },
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Hire Date',
+                    hintText: 'Select hire date for PTO calculations',
+                    prefixIcon: const Icon(Icons.calendar_today),
+                    suffixIcon: _hireDate != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                _hireDate = null;
+                              });
+                            },
+                          )
+                        : null,
+                  ),
+                  child: Text(
+                    _hireDate != null
+                        ? DateFormat('MMM d, yyyy').format(_hireDate!)
+                        : 'Not set (using account creation date)',
+                    style: TextStyle(
+                      color: _hireDate != null ? null : Colors.grey,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'Hire date is used for PTO eligibility calculations. If not set, the account creation date will be used.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
 

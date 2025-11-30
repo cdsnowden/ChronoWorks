@@ -10,6 +10,8 @@ class UserModel {
   final String? phoneNumber;
   final String? address; // Employee's home address
   final DateTime? dateOfBirth; // Employee's date of birth
+  final DateTime? hireDate; // Employee's start/hire date for PTO calculations
+  final String? ptoPolicyId; // Optional specific PTO policy (null = use company default)
   final String? profileImageUrl;
   final String? faceImageUrl; // For facial recognition
   final String employmentType; // 'full-time', 'part-time'
@@ -36,6 +38,8 @@ class UserModel {
     this.phoneNumber,
     this.address,
     this.dateOfBirth,
+    this.hireDate,
+    this.ptoPolicyId,
     this.profileImageUrl,
     this.faceImageUrl,
     required this.employmentType,
@@ -74,18 +78,33 @@ class UserModel {
            dateOfBirth != null;
   }
 
-  // Check if employee is eligible for PTO (1 year anniversary)
+  // Effective start date for PTO calculations (uses hireDate if set, otherwise createdAt)
+  DateTime get effectiveStartDate => hireDate ?? createdAt;
+
+  // Calculate years of service based on effective start date
+  int get yearsOfService {
+    final now = DateTime.now();
+    int years = now.year - effectiveStartDate.year;
+    // Adjust if anniversary hasn't occurred yet this year
+    if (now.month < effectiveStartDate.month ||
+        (now.month == effectiveStartDate.month && now.day < effectiveStartDate.day)) {
+      years--;
+    }
+    return years < 0 ? 0 : years;
+  }
+
+  // Check if employee is eligible for PTO (based on waiting period - default 1 year)
   bool get isPtoEligible {
     final oneYearAgo = DateTime.now().subtract(const Duration(days: 365));
-    return createdAt.isBefore(oneYearAgo) || createdAt.isAtSameMomentAs(oneYearAgo);
+    return effectiveStartDate.isBefore(oneYearAgo) || effectiveStartDate.isAtSameMomentAs(oneYearAgo);
   }
 
   // Get the date when employee becomes eligible for PTO
   DateTime get ptoEligibilityDate {
-    return createdAt.add(const Duration(days: 365));
+    return effectiveStartDate.add(const Duration(days: 365));
   }
 
-  // Get days until PTO eligibility (negative if already eligible)
+  // Get days until PTO eligibility (0 if already eligible)
   int get daysUntilPtoEligible {
     if (isPtoEligible) return 0;
     return ptoEligibilityDate.difference(DateTime.now()).inDays;
@@ -103,6 +122,8 @@ class UserModel {
       'phoneNumber': phoneNumber,
       'address': address,
       'dateOfBirth': dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
+      'hireDate': hireDate != null ? Timestamp.fromDate(hireDate!) : null,
+      'ptoPolicyId': ptoPolicyId,
       'profileImageUrl': profileImageUrl,
       'faceImageUrl': faceImageUrl,
       'employmentType': employmentType,
@@ -128,6 +149,10 @@ class UserModel {
       companyId: map['companyId'] ?? '',
       phoneNumber: map['phoneNumber'],
       address: map['address'],
+      hireDate: map['hireDate'] != null
+          ? (map['hireDate'] as Timestamp).toDate()
+          : null,
+      ptoPolicyId: map['ptoPolicyId'],
       dateOfBirth: map['dateOfBirth'] != null
           ? (map['dateOfBirth'] as Timestamp).toDate()
           : null,
@@ -166,12 +191,15 @@ class UserModel {
     String? phoneNumber,
     String? address,
     DateTime? dateOfBirth,
+    DateTime? hireDate,
+    String? ptoPolicyId,
     String? profileImageUrl,
     String? faceImageUrl,
     String? employmentType,
     double? hourlyRate,
     bool? isActive,
     bool? isKeyholder,
+    bool? requiresPasswordChange,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? managerId,
@@ -187,12 +215,15 @@ class UserModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       address: address ?? this.address,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      hireDate: hireDate ?? this.hireDate,
+      ptoPolicyId: ptoPolicyId ?? this.ptoPolicyId,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       faceImageUrl: faceImageUrl ?? this.faceImageUrl,
       employmentType: employmentType ?? this.employmentType,
       hourlyRate: hourlyRate ?? this.hourlyRate,
       isActive: isActive ?? this.isActive,
       isKeyholder: isKeyholder ?? this.isKeyholder,
+      requiresPasswordChange: requiresPasswordChange ?? this.requiresPasswordChange,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       managerId: managerId ?? this.managerId,
