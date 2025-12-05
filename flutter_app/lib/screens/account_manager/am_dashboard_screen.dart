@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'company_dashboard_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/account_manager.dart';
@@ -699,12 +700,18 @@ class _AccountManagerDashboardScreenState
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
-          // TODO: Navigate to company detail screen
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('View details for $businessName'),
-            ),
-          );
+          final companyId = company['id'] ?? '';
+          if (companyId.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CompanyDashboardScreen(
+                  companyId: companyId,
+                  companyName: businessName,
+                ),
+              ),
+            );
+          }
         },
       ),
     );

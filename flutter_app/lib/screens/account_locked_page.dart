@@ -1,14 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/subscription_service.dart';
 
 /// Page shown when a user's account is locked
 class AccountLockedPage extends StatelessWidget {
+  static const String _supportEmail = 'support@chronoworks.co';
   final CompanySubscription subscription;
 
   const AccountLockedPage({
     Key? key,
     required this.subscription,
   }) : super(key: key);
+
+  Future<void> _contactSupport() async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: _supportEmail,
+      queryParameters: {
+        'subject': 'Account Locked - Support Request',
+        'body': 'Hello,\n\nMy account has been locked and I need assistance.\n\nPlease help me resolve this issue.\n\nThank you.',
+      },
+    );
+    if (await canLaunchUrl(emailUri)) {
+      await launchUrl(emailUri);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +37,6 @@ class AccountLockedPage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Lock icon
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -35,8 +50,6 @@ class AccountLockedPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-
-                // Title
                 Text(
                   'Account Locked',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -46,8 +59,6 @@ class AccountLockedPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-
-                // Locked date
                 if (subscription.lockedAt != null)
                   Text(
                     'Locked on ${_formatDate(subscription.lockedAt!)}',
@@ -57,8 +68,6 @@ class AccountLockedPage extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: 24),
-
-                // Reason card
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -96,8 +105,6 @@ class AccountLockedPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // What this means section
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -117,18 +124,16 @@ class AccountLockedPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      _buildBulletPoint('❌ Cannot clock in or clock out', Colors.red),
-                      _buildBulletPoint('❌ Cannot create or edit schedules', Colors.red),
-                      _buildBulletPoint('❌ Cannot add or manage employees', Colors.red),
+                      _buildBulletPoint('Cannot clock in or clock out', Colors.red),
+                      _buildBulletPoint('Cannot create or edit schedules', Colors.red),
+                      _buildBulletPoint('Cannot add or manage employees', Colors.red),
                       const SizedBox(height: 8),
-                      _buildBulletPoint('✓ Read-only access to your data', Colors.green),
-                      _buildBulletPoint('✓ Can export your data', Colors.green),
+                      _buildBulletPoint('Read-only access to your data', Colors.green),
+                      _buildBulletPoint('Can export your data', Colors.green),
                     ],
                   ),
                 ),
                 const SizedBox(height: 32),
-
-                // Reactivate button
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).pushNamed('/subscription-plans');
@@ -149,7 +154,6 @@ class AccountLockedPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 Text(
                   'Choose any paid plan to immediately unlock your account',
                   style: TextStyle(
@@ -159,8 +163,6 @@ class AccountLockedPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
-
-                // Data retention warning
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -191,13 +193,10 @@ class AccountLockedPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Contact support
-                TextButton(
-                  onPressed: () {
-                    // TODO: Implement contact support
-                  },
-                  child: const Text('Contact Support'),
+                TextButton.icon(
+                  onPressed: _contactSupport,
+                  icon: const Icon(Icons.email_outlined),
+                  label: const Text('Contact Support'),
                 ),
               ],
             ),
@@ -208,15 +207,14 @@ class AccountLockedPage extends StatelessWidget {
   }
 
   Widget _buildBulletPoint(String text, Color color) {
+    final icon = color == Colors.red ? Icons.close : Icons.check;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '  ',
-            style: TextStyle(color: color),
-          ),
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
@@ -236,6 +234,6 @@ class AccountLockedPage extends StatelessWidget {
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    return '${months[date.month - 1]}' + ' ${date.day}, ${date.year}';
   }
 }

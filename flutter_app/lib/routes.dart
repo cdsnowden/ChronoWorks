@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'models/user_model.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/password_reset_screen.dart';
@@ -32,10 +33,13 @@ import 'screens/admin/payroll_export_screen.dart';
 import 'screens/admin/admin_analytics_screen.dart';
 import 'screens/admin/pto_policy_screen.dart';
 import 'screens/admin/pto_balance_management_screen.dart';
+import 'screens/admin/compliance_settings_screen.dart';
 import 'screens/super_admin/platform_reports_screen.dart';
 import 'screens/super_admin/super_admin_dashboard.dart';
 import 'screens/admin/registration_requests_page.dart';
 import 'screens/public/register_page.dart';
+import 'screens/public/pricing_page.dart';
+import 'screens/landing_page.dart';
 
 class AppRoutes {
   // Home route - now goes to login
@@ -63,6 +67,7 @@ class AppRoutes {
   static const String adminAnalytics = '/admin/analytics';
   static const String ptoPolicySettings = '/admin/pto-policy';
   static const String ptoBalanceManagement = '/admin/pto-balances';
+  static const String complianceSettings = '/admin/compliance-settings';
 
   // Manager routes
   static const String managerDashboard = '/manager/dashboard';
@@ -76,6 +81,7 @@ class AppRoutes {
   static const String superAdminDashboard = '/super-admin/dashboard';
   static const String registrationRequests = '/super-admin/registration-requests';
   static const String signup = '/signup';
+  static const String pricing = '/pricing';
 
   // Employee routes
   static const String employeeDashboard = '/employee/dashboard';
@@ -96,8 +102,11 @@ class AppRoutes {
     final path = uri.path;
 
     switch (path) {
-      // Home Route - Login Screen
+      // Home Route - Landing Page on web, Login on mobile
       case home:
+        if (kIsWeb) {
+          return MaterialPageRoute(builder: (_) => const LandingPage());
+        }
         return MaterialPageRoute(builder: (_) => const LoginScreen());
 
       // Auth Routes
@@ -170,6 +179,9 @@ class AppRoutes {
       case ptoBalanceManagement:
         return MaterialPageRoute(builder: (_) => const PtoBalanceManagementScreen());
 
+      case complianceSettings:
+        return MaterialPageRoute(builder: (_) => const ComplianceSettingsScreen());
+
       // Manager Routes
       case managerDashboard:
         return MaterialPageRoute(builder: (_) => const ManagerDashboard());
@@ -216,6 +228,13 @@ class AppRoutes {
       case profile:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
 
+      // Pricing Route
+      case pricing:
+        return MaterialPageRoute(builder: (_) => const PricingPage());
+
+      // Signup/Register Route
+      case signup:
+        return MaterialPageRoute(builder: (_) => const RegisterPage());
 
       // Default - redirect to login
       default:

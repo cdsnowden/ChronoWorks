@@ -6,7 +6,7 @@
  */
 
 const { onSchedule } = require('firebase-functions/v2/scheduler');
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 const sgMail = require('@sendgrid/mail');
 
@@ -108,6 +108,25 @@ exports.getComplianceStatus = onCall({
   } catch (error) {
     console.error('Error getting compliance status:', error);
     throw new HttpsError('internal', error.message);
+  }
+});
+
+/**
+ * HTTP endpoint to seed compliance rules (one-time setup)
+ * DELETE THIS AFTER INITIAL SETUP for security
+ */
+exports.seedComplianceRules = onRequest({
+  memory: '512MiB',
+  timeoutSeconds: 300,
+}, async (req, res) => {
+  console.log('Seeding compliance rules...');
+
+  try {
+    const result = await performComplianceCheck();
+    res.json({ success: true, result });
+  } catch (error) {
+    console.error('Error seeding rules:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

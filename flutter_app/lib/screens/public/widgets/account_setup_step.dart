@@ -319,8 +319,56 @@ class _AccountSetupStepState extends State<AccountSetupStep> {
         title: const Text('Terms of Service'),
         content: const SingleChildScrollView(
           child: Text(
-            'Terms of Service content goes here.\n\n'
-            'This is a placeholder. In production, you would include your actual Terms of Service text.',
+            '''CHRONOWORKS TERMS OF SERVICE
+
+Last Updated: December 2024
+
+1. ACCEPTANCE OF TERMS
+By accessing or using ChronoWorks ("the Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service.
+
+2. DESCRIPTION OF SERVICE
+ChronoWorks provides workforce management solutions including time tracking, scheduling, and payroll management tools for businesses and their employees.
+
+3. USER ACCOUNTS
+- You must provide accurate and complete information when creating an account
+- You are responsible for maintaining the security of your account credentials
+- You must notify us immediately of any unauthorized access to your account
+
+4. ACCEPTABLE USE
+You agree not to:
+- Use the Service for any illegal purpose
+- Attempt to gain unauthorized access to any part of the Service
+- Interfere with or disrupt the Service or its servers
+- Submit false time records or manipulate data
+
+5. DATA AND PRIVACY
+- We collect and process data as described in our Privacy Policy
+- Employee time and location data is collected for workforce management purposes
+- You consent to the collection of biometric data (facial recognition) if enabled by your employer
+
+6. EMPLOYER RESPONSIBILITIES
+Employers using ChronoWorks are responsible for:
+- Ensuring compliance with applicable labor laws
+- Obtaining necessary employee consents for data collection
+- Maintaining accurate employee records
+
+7. PAYMENT TERMS
+- Subscription fees are billed according to your selected plan
+- Failure to pay may result in service suspension
+- Refunds are provided according to our refund policy
+
+8. LIMITATION OF LIABILITY
+ChronoWorks is not liable for any indirect, incidental, or consequential damages arising from your use of the Service.
+
+9. TERMINATION
+We may terminate or suspend your account at any time for violation of these terms.
+
+10. CHANGES TO TERMS
+We reserve the right to modify these terms at any time. Continued use of the Service constitutes acceptance of updated terms.
+
+11. CONTACT
+For questions about these Terms, contact support@chronoworks.co
+''',
           ),
         ),
         actions: [

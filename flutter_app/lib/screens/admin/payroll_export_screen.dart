@@ -25,6 +25,7 @@ class _PayrollExportScreenState extends State<PayrollExportScreen> {
   String _periodType = 'biweekly';
   bool _isLoading = false;
   List<EmployeePayrollSummary>? _payrollData;
+  final _adpCoCodeController = TextEditingController();
   Map<String, double>? _totals;
 
   @override
@@ -144,6 +145,126 @@ class _PayrollExportScreenState extends State<PayrollExportScreen> {
       );
     }
   }
+
+  void _showADPExportDialog() {
+    if (_periodStart == null || _periodEnd == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a pay period first'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export for ADP'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter your ADP Company Code (3 characters):',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _adpCoCodeController,
+              maxLength: 3,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'ADP Co Code',
+                hintText: 'e.g., ABC',
+                border: OutlineInputBorder(),
+                counterText: '',
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Note: Only employees with an ADP File # will be included. '
+              'You can add ADP File # in employee settings.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _downloadADPExport();
+            },
+            child: const Text('Export'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _downloadADPExport() async {
+    final adpCoCode = _adpCoCodeController.text.trim().toUpperCase();
+    if (adpCoCode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter an ADP Company Code'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final authProvider = context.read<app_auth.AuthProvider>();
+    final user = authProvider.currentUser;
+    if (user == null) return;
+
+    try {
+      // Check for employees missing ADP File Number
+      final missingADP = await _payrollService.getEmployeesMissingADPNumber(user.companyId);
+      
+      if (missingADP.isNotEmpty) {
+        // Show warning but continue
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${missingADP.length} employee(s) missing ADP File # will be skipped'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+
+      final csv = await _payrollService.generateADPExport(
+        companyId: user.companyId,
+        adpCoCode: adpCoCode,
+        periodStart: _periodStart!,
+        periodEnd: _periodEnd!,
+      );
+
+      // Generate ADP filename format: PRcccEPI.csv where ccc is company code
+      final filename = 'PR${adpCoCode.padRight(3).substring(0, 3)}EPI.csv';
+
+      downloadFile(csv, filename);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Downloaded $filename for ADP import'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
 
   Widget _buildSummaryCard(String title, String value, {Color? color}) {
     return Card(
@@ -363,10 +484,24 @@ class _PayrollExportScreenState extends State<PayrollExportScreen> {
         ],
       ),
       floatingActionButton: _payrollData != null && _payrollData!.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: _downloadCSV,
-              icon: const Icon(Icons.download),
-              label: const Text('Export CSV'),
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                FloatingActionButton.extended(
+                  heroTag: 'csv',
+                  onPressed: _downloadCSV,
+                  icon: const Icon(Icons.download),
+                  label: const Text('Export CSV'),
+                ),
+                const SizedBox(width: 16),
+                FloatingActionButton.extended(
+                  heroTag: 'adp',
+                  onPressed: _showADPExportDialog,
+                  backgroundColor: Colors.green,
+                  icon: const Icon(Icons.business),
+                  label: const Text('Export for ADP'),
+                ),
+              ],
             )
           : null,
     );

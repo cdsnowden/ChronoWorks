@@ -489,10 +489,7 @@ class _AssignedCompaniesScreenState extends State<AssignedCompaniesScreen> {
               title: const Text('View Analytics'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navigate to analytics
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('View analytics for $businessName')),
-                );
+                Navigator.pushNamed(context, '/admin/analytics');
               },
             ),
             ListTile(
@@ -500,10 +497,7 @@ class _AssignedCompaniesScreenState extends State<AssignedCompaniesScreen> {
               title: const Text('Edit Company Settings'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navigate to company settings
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Edit settings for $businessName')),
-                );
+                Navigator.pushNamed(context, '/admin/compliance-settings');
               },
             ),
             const Divider(height: 1),

@@ -296,4 +296,94 @@ class PayrollExportService {
       'totalEmployees': totalEmployees.toDouble(),
     };
   }
+
+  /// Generate ADP Workforce Now compatible CSV
+  /// Format: Co Code, Batch ID, File #, Temp Dept, Temp Rate, Reg Hours, O/T Hours, Hours 3 Code, Hours 3 Amount
+  Future<String> generateADPExport({
+    required String companyId,
+    required String adpCoCode,
+    required DateTime periodStart,
+    required DateTime periodEnd,
+  }) async {
+    // Generate batch ID in YYMMDD format
+    final batchId = '${periodEnd.year.toString().substring(2)}${periodEnd.month.toString().padLeft(2, '0')}${periodEnd.day.toString().padLeft(2, '0')}';
+    
+    // Get all active employees
+    final employeesSnapshot = await _firestore
+        .collection(FirebaseCollections.users)
+        .where('companyId', isEqualTo: companyId)
+        .where('isActive', isEqualTo: true)
+        .get();
+    
+    final employees = employeesSnapshot.docs
+        .map((doc) => UserModel.fromFirestore(doc))
+        .toList();
+    
+    final List<String> csvLines = [];
+    
+    // Add ADP header row
+    csvLines.add('Co Code,Batch ID,File #,Temp Dept,Temp Rate,Reg Hours,O/T Hours,Hours 3 Code,Hours 3 Amount');
+    
+    for (final employee in employees) {
+      // Skip employees without ADP File Number
+      final adpFileNumber = employee.adpFileNumber;
+      if (adpFileNumber == null || adpFileNumber.isEmpty) {
+        continue;
+      }
+      
+      // Get time entries for this employee
+      final timeEntries = await _getTimeEntriesForPeriod(
+        employeeId: employee.id,
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+      );
+      
+      // Calculate hours
+      final hoursData = _calculateHours(timeEntries);
+      final regularHours = hoursData['regular']!;
+      final overtimeHours = hoursData['overtime']!;
+      
+      // Get PTO hours
+      final timeOffRequests = await _getApprovedTimeOffForPeriod(
+        employeeId: employee.id,
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+      );
+      final ptoData = _calculatePTO(timeOffRequests, periodStart, periodEnd);
+      final ptoHours = ptoData['paidDays']!.toInt() * standardDailyHours;
+      
+      // Build CSV row (ADP format)
+      // Co Code (3-char), Batch ID (6-digit), File #, Temp Dept (blank), Temp Rate (blank), Reg Hours, O/T Hours, Hours 3 Code (PTO), Hours 3 Amount
+      final row = [
+        adpCoCode.padRight(3).substring(0, 3), // Co Code - exactly 3 chars
+        batchId, // Batch ID
+        adpFileNumber, // File # (ADP employee ID)
+        '', // Temp Dept (leave blank - use ADP defaults)
+        '', // Temp Rate (leave blank - use ADP defaults)
+        regularHours.toStringAsFixed(2), // Reg Hours
+        overtimeHours.toStringAsFixed(2), // O/T Hours
+        ptoHours > 0 ? 'PTO' : '', // Hours 3 Code
+        ptoHours > 0 ? ptoHours.toStringAsFixed(2) : '', // Hours 3 Amount
+      ];
+      
+      csvLines.add(row.join(','));
+    }
+    
+    return csvLines.join('\n');
+  }
+
+  /// Get employees missing ADP File Number
+  Future<List<UserModel>> getEmployeesMissingADPNumber(String companyId) async {
+    final employeesSnapshot = await _firestore
+        .collection(FirebaseCollections.users)
+        .where('companyId', isEqualTo: companyId)
+        .where('isActive', isEqualTo: true)
+        .get();
+    
+    return employeesSnapshot.docs
+        .map((doc) => UserModel.fromFirestore(doc))
+        .where((emp) => emp.adpFileNumber == null || emp.adpFileNumber!.isEmpty)
+        .toList();
+  }
+
 }

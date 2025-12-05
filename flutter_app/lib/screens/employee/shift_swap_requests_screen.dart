@@ -5,6 +5,7 @@ import '../../models/shift_swap_request_model.dart';
 import '../../models/shift_model.dart';
 import '../../models/user_model.dart';
 import '../../services/shift_swap_request_service.dart';
+import '../../services/schedule_service.dart';
 import '../../services/auth_provider.dart';
 
 class ShiftSwapRequestsScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class ShiftSwapRequestsScreen extends StatefulWidget {
 
 class _ShiftSwapRequestsScreenState extends State<ShiftSwapRequestsScreen> {
   final ShiftSwapRequestService _service = ShiftSwapRequestService();
+  final ScheduleService _scheduleService = ScheduleService();
   String _selectedTab = 'my_requests'; // 'my_requests', 'open_requests'
 
   @override
@@ -551,6 +553,7 @@ class _CreateRequestDialog extends StatefulWidget {
 
 class _CreateRequestDialogState extends State<_CreateRequestDialog> {
   final ShiftSwapRequestService _service = ShiftSwapRequestService();
+  final ScheduleService _scheduleService = ScheduleService();
   final _formKey = GlobalKey<FormState>();
 
   String _requestType = 'coverage'; // 'coverage' or 'swap'
@@ -671,13 +674,76 @@ class _CreateRequestDialogState extends State<_CreateRequestDialog> {
 
   Future<void> _selectShift(BuildContext context,
       {required bool isReplacement}) async {
-    // In a real app, this would show a dialog with available shifts
-    // For now, just show a message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Shift selector would appear here. This is a placeholder.'),
-      ),
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
+
+    try {
+      // Fetch upcoming shifts for the user
+      final shifts = await _scheduleService.getUpcomingShifts(widget.userId);
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // Close loading indicator
+
+      if (shifts.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No upcoming shifts found. Shifts must be published to appear here.'),
+          ),
+        );
+        return;
+      }
+
+      // Show shift selection dialog
+      final selectedShift = await showDialog<ShiftModel>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(isReplacement ? 'Select Replacement Shift' : 'Select Your Shift'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: shifts.length,
+              itemBuilder: (context, index) {
+                final shift = shifts[index];
+                return ListTile(
+                  leading: const Icon(Icons.calendar_today),
+                  title: Text(shift.formattedDate),
+                  subtitle: Text(shift.formattedTimeRange),
+                  onTap: () => Navigator.pop(context, shift),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+
+      if (selectedShift != null) {
+        setState(() {
+          if (isReplacement) {
+            _replacementShift = selectedShift;
+          } else {
+            _selectedShift = selectedShift;
+          }
+        });
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading if still open
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading shifts: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _handleSubmit() async {

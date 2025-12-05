@@ -469,10 +469,7 @@ class _AccountManagersListScreenState extends State<AccountManagersListScreen> {
               title: const Text('Edit Profile'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navigate to edit screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Edit ${am.displayName}')),
-                );
+                _showEditProfileDialog(am);
               },
             ),
             ListTile(
@@ -680,4 +677,82 @@ class _AccountManagersListScreenState extends State<AccountManagersListScreen> {
 
     controller.dispose();
   }
+
+  void _showEditProfileDialog(AccountManager am) {
+    final displayNameController = TextEditingController(text: am.displayName);
+    final phoneController = TextEditingController(text: am.phoneNumber ?? '');
+    final capacityController = TextEditingController(text: am.maxAssignedCompanies.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit ${am.displayName}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: displayNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Display Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: capacityController,
+                decoration: const InputDecoration(
+                  labelText: 'Max Assigned Companies',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await _amService.updateAccountManager(am.id, {
+                  'displayName': displayNameController.text.trim(),
+                  'phoneNumber': phoneController.text.trim().isEmpty
+                      ? null
+                      : phoneController.text.trim(),
+                  'maxAssignedCompanies': int.tryParse(capacityController.text) ?? am.maxAssignedCompanies,
+                });
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Profile updated successfully')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
 }

@@ -570,10 +570,7 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
                     label: 'Analytics',
                     color: Colors.purple,
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Analytics coming soon...')),
-                      );
+                      Navigator.pushNamed(context, '/admin/analytics');
                     },
                   ),
                 ),

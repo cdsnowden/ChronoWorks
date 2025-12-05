@@ -8,6 +8,7 @@ class UserModel {
   final String role; // 'admin', 'manager', 'employee'
   final String companyId; // Multi-tenant company ID
   final String? phoneNumber;
+  final String? adpFileNumber; // ADP employee ID for payroll export
   final String? address; // Employee's home address
   final DateTime? dateOfBirth; // Employee's date of birth
   final DateTime? hireDate; // Employee's start/hire date for PTO calculations
@@ -36,6 +37,7 @@ class UserModel {
     required this.role,
     required this.companyId,
     this.phoneNumber,
+    this.adpFileNumber,
     this.address,
     this.dateOfBirth,
     this.hireDate,
@@ -120,6 +122,7 @@ class UserModel {
       'role': role,
       'companyId': companyId,
       'phoneNumber': phoneNumber,
+      'adpFileNumber': adpFileNumber,
       'address': address,
       'dateOfBirth': dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
       'hireDate': hireDate != null ? Timestamp.fromDate(hireDate!) : null,
@@ -148,6 +151,7 @@ class UserModel {
       role: map['role'] ?? 'employee',
       companyId: map['companyId'] ?? '',
       phoneNumber: map['phoneNumber'],
+      adpFileNumber: map['adpFileNumber'],
       address: map['address'],
       hireDate: map['hireDate'] != null
           ? (map['hireDate'] as Timestamp).toDate()
@@ -189,6 +193,7 @@ class UserModel {
     String? role,
     String? companyId,
     String? phoneNumber,
+    String? adpFileNumber,
     String? address,
     DateTime? dateOfBirth,
     DateTime? hireDate,
@@ -213,6 +218,7 @@ class UserModel {
       role: role ?? this.role,
       companyId: companyId ?? this.companyId,
       phoneNumber: phoneNumber ?? this.phoneNumber,
+      adpFileNumber: adpFileNumber ?? this.adpFileNumber,
       address: address ?? this.address,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       hireDate: hireDate ?? this.hireDate,

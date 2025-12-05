@@ -378,7 +378,7 @@ async function sendWelcomeEmail({ownerName, ownerEmail, businessName, temporaryP
             </div>
             <div class="credential-row">
               <span class="label">Login URL:</span>
-              <span><a href="https://chronoworks.co/login">chronoworks.com/login</a></span>
+              <span><a href="https://chronoworks.co/login">chronoworks.co/login</a></span>
             </div>
             <p style="margin-top: 15px; color: #666; font-size: 14px;">
               <strong>Important:</strong> Please change your password after your first login.

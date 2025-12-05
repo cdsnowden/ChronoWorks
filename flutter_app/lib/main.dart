@@ -35,9 +35,11 @@ class MyApp extends StatelessWidget {
       if (path != '/' && path.isNotEmpty) {
         return path + search;
       }
+      // Web root shows landing page
+      return AppRoutes.home;
     }
 
-    // Default to login screen for mobile or root web path
+    // Default to login screen for mobile
     return AppRoutes.login;
   }
 

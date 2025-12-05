@@ -559,7 +559,7 @@ exports.sendSubscriptionManagementEmail = onRequest(
 
         // Generate management URL
         // TODO: Replace with actual production domain
-        const managementUrl = `https://chronoworks.com/subscription/manage?token=${token}`;
+        const managementUrl = `https://chronoworks.co/subscription/manage?token=${token}`;
 
         // Send email using SendGrid
         const {sendSubscriptionManagementEmail: sendEmail} = require("./emailService");
@@ -1473,9 +1473,11 @@ const {
   checkComplianceUpdates,
   triggerComplianceCheck,
   getComplianceStatus,
+  seedComplianceRules,
 } = require("./complianceUpdateFunctions");
 
 // Export Compliance Update functions (runs every 30 days)
 exports.checkComplianceUpdates = checkComplianceUpdates;
 exports.triggerComplianceCheck = triggerComplianceCheck;
 exports.getComplianceStatus = getComplianceStatus;
+exports.seedComplianceRules = seedComplianceRules;

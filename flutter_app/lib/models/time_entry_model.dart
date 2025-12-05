@@ -14,6 +14,11 @@ class TimeEntryModel {
   final DateTime? updatedAt;
   final List<Map<String, dynamic>>? editHistory; // Audit trail for edits
   final bool isOffPremises; // Whether employee clocked in outside geofence
+  final String? breakType; // 'meal' or 'rest' for break entries
+  final int? breakDurationMinutes; // Duration of break in minutes
+
+  // Getter for compatibility
+  DateTime get clockIn => clockInTime;
 
   TimeEntryModel({
     required this.id,
@@ -29,6 +34,8 @@ class TimeEntryModel {
     this.updatedAt,
     this.editHistory,
     this.isOffPremises = false,
+    this.breakType,
+    this.breakDurationMinutes,
   });
 
   // Check if currently clocked in (no clock out time)
@@ -73,6 +80,8 @@ class TimeEntryModel {
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'editHistory': editHistory,
       'isOffPremises': isOffPremises,
+      'breakType': breakType,
+      'breakDurationMinutes': breakDurationMinutes,
     };
   }
 
@@ -102,6 +111,8 @@ class TimeEntryModel {
           ? List<Map<String, dynamic>>.from(map['editHistory'])
           : null,
       isOffPremises: map['isOffPremises'] ?? false,
+      breakType: map['breakType'],
+      breakDurationMinutes: map['breakDurationMinutes'],
     );
   }
 
@@ -126,6 +137,8 @@ class TimeEntryModel {
     DateTime? updatedAt,
     List<Map<String, dynamic>>? editHistory,
     bool? isOffPremises,
+    String? breakType,
+    int? breakDurationMinutes,
   }) {
     return TimeEntryModel(
       id: id ?? this.id,
@@ -141,6 +154,8 @@ class TimeEntryModel {
       updatedAt: updatedAt ?? this.updatedAt,
       editHistory: editHistory ?? this.editHistory,
       isOffPremises: isOffPremises ?? this.isOffPremises,
+      breakType: breakType ?? this.breakType,
+      breakDurationMinutes: breakDurationMinutes ?? this.breakDurationMinutes,
     );
   }
 

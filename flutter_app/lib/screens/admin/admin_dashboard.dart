@@ -144,6 +144,14 @@ class AdminDashboard extends StatelessWidget {
                           Navigator.of(context).pushNamed(AppRoutes.ptoBalanceManagement);
                         },
                       ),
+                      _DashboardCard(
+                        icon: Icons.settings,
+                        title: 'Settings',
+                        subtitle: 'Compliance & settings',
+                        onTap: () {
+                          Navigator.of(context).pushNamed(AppRoutes.complianceSettings);
+                        },
+                      ),
                     ],
                   ),
                 ),

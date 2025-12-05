@@ -59,11 +59,11 @@ class _ScheduleGridScreenState extends State<ScheduleGridScreen> {
     final allUsers = await _employeeService.getAllEmployees(currentUser.companyId);
     print('DEBUG: Loaded ${allUsers.length} users from company ${currentUser.companyId}');
 
-    // Filter to show employees, managers, and admins who are full-time or part-time
+    // Filter to show employees, managers, and admins (all schedulable)
     employees = allUsers.where((u) =>
       u.role == UserRoles.employee ||
       u.role == UserRoles.manager ||
-      (u.role == UserRoles.admin && (u.employmentType == 'full-time' || u.employmentType == 'part-time'))
+      u.role == UserRoles.admin
     ).toList();
 
     print('DEBUG: After filtering, ${employees.length} employees/managers/admins to schedule');
