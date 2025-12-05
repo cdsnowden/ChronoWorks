@@ -23,6 +23,7 @@ dependencies:
   # Location & Camera
   geolocator: ^11.0.0
   camera: ^0.10.5+9
+  camera_avfoundation: ^0.9.17
   image_picker: ^1.0.7
   
   # Face Recognition
