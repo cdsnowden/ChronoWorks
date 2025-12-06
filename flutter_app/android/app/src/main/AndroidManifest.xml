@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="ChronoWorks Pro"
+        android:label="Chronoworks-ad-os"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
